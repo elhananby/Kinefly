@@ -18,8 +18,14 @@ rosdep update
 
 ## Install additional packages
 ```
-sudo apt-get install -y python-setuptools python-scipy libdc1394-22-dev intltool gobject-introspection
+sudo apt-get install -y python-setuptools python-scipy libdc1394-22-dev intltool gobject-introspection python-opencv
 sudo apt-get install -y ros-kinetic-driver-base
+```
+
+So there's an issue where ROS Kinetic comes with OpenCV3, while Kinefly was still written for OpenCV2. Even after installing python-opencv, which (in 16.04) actually installs version 2.4.9,
+ROS will still default to loading the wrong version. To avoid that, we have to rename the wrong library file directly from the ROS Python dist-utils folder.
+```
+sudo mv /opt/ros/noetic/lib/python2.7/dist-packages/cv2.so /opt/ros/noetic/lib/python2.7/dist-packages/cv2.so.backup
 ```
 
 ## Get aravis drivers
@@ -40,6 +46,7 @@ catkin_init_workspace
 ```
 
 ## Get camera_aravis ROS package
+I'm using the camera_aravis package from [@florisvb](https://github.com/florisvb), since it supports Aravis 0.3.7, which seems to be the only working version for Kinefly.
 ```
 cd ~/catkin/src
 git clone https://github.com/florisvb/camera_aravis
@@ -77,6 +84,7 @@ git clone https://github.com/ssafarik/ledpanels
 ```
 
 ## Get phidgets ROS node
+Again, using a different phidgets ROS package ([@psilentp](https://github.com/psilentp)) - for some reason the original one didn't come with the proper ROS package files, which meant it could not actually be used.
 ```
 cd ~/catkin/src
 git clone https://github.com/psilentp/phidgets.git
@@ -102,7 +110,8 @@ echo "export RIG=yourrigname" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-## Edit the new files as per your needs (ethernet or firewire camera, camera exposure, tracking parameters, etc).
+## Edit the new files as per your needs
+ethernet or firewire camera, camera exposure, tracking parameters, etc
 ```
 cd ~/catkin/src/Kinefly/launch/yourrigname
 gedit source_camera.launch
