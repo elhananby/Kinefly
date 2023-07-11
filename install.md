@@ -62,7 +62,7 @@ cd libphidget-2.1.8.20140319/
 make && sudo make install 
 ```
 
-# Get and install PhidgetsPython
+## Get and install PhidgetsPython
 ```
 cd ~/Downloads/
 wget https://raw.githubusercontent.com/ungrinlab/monitor/master/PhidgetsPython.zip
