@@ -48,6 +48,10 @@ git checkout 497e415c5b0b9c20ac4179f8acc8ae9547799523
 
 At this point, you should verify that your camera hardware is configured properly, i.e. ethernet ports & static ip's & dhcp, or firewire stuff.
 Assuming you're using a Basler GigE camera, follow the general insturctions from [Basler's site](https://docs.baslerweb.com/network-configuration-(gige-cameras)#assigning-a-fixed-ip-address).
+Also, don't forget to disable the firewall:
+```
+sudo ufw disable
+```
 
 ## Get & make "libphidget"
 ```
@@ -59,7 +63,6 @@ make && sudo make install
 ```
 
 # Get and install PhidgetsPython
-
 ```
 cd ~/Downloads/
 wget https://raw.githubusercontent.com/ungrinlab/monitor/master/PhidgetsPython.zip
@@ -107,8 +110,6 @@ gedit params_camera.launch
 gedit params_kinefly.launch
 ...etc...
 ```
-
-
 
 ## You're done!
 Assuming that you got here successfully, then you  should be able to run Kinefly, for example:
