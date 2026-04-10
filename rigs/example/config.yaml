@@ -1,0 +1,52 @@
+kinefly:
+  version: 2
+
+camera:
+  source: opencv
+  device_index: 0
+  framerate: 60
+  scale_image: 1.0
+
+tracking:
+  n_edges_max: 1
+  rc_background: 1000.0
+  use_gui: true
+
+  head:
+    tracker: area
+    autozero: true
+    threshold: 0.0
+    feathering: 0.0
+    saturation_correction: false
+
+  abdomen:
+    tracker: area
+    autozero: true
+    threshold: 0.0
+    feathering: 0.25
+    saturation_correction: false
+
+  left:
+    tracker: edge
+    threshold: 0.01
+    saturation_correction: false
+
+  right:
+    tracker: edge
+    threshold: 0.01
+    saturation_correction: false
+
+  aux:
+    wingbeat_min: 180.0
+    wingbeat_max: 220.0
+
+recording:
+  output_dir: ~/kinefly_recordings
+  encoder: auto
+
+gui:
+  state_file: ~/kinefly.yaml
+
+# Uncomment to enable ZeroMQ publishing:
+# zmq:
+#   address: tcp://*:5555
