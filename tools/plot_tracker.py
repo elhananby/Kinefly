@@ -9,57 +9,19 @@ usage: plot_tracker.py [--address tcp://localhost:5555] [--tracker left|right|he
 from __future__ import annotations
 
 import argparse
-import collections
 import logging
 import sys
-from typing import Any
+from pathlib import Path
+
+# Allow running as a standalone script from any directory
+sys.path.insert(0, str(Path(__file__).parent))
+from _plot_common import WINDOW, RollingBuffer, connect_subscriber, recv_state  # isort: skip
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 
 logger = logging.getLogger(__name__)
-WINDOW = 200  # rolling window size
-
-
-def connect_subscriber(address: str) -> Any:
-    """Connect a ZeroMQ SUB socket to address. Returns socket or None."""
-    try:
-        import zmq
-
-        ctx = zmq.Context()
-        sub = ctx.socket(zmq.SUB)
-        sub.connect(address)
-        sub.setsockopt(zmq.SUBSCRIBE, b"")
-        sub.setsockopt(zmq.RCVTIMEO, 100)  # 100ms receive timeout
-        return sub
-    except ImportError:
-        logger.error("pyzmq not installed. Install with: pip install kinefly[zmq]")
-        sys.exit(1)
-
-
-def recv_state(sub: Any) -> dict | None:
-    """Non-blocking receive. Returns state dict or None on timeout."""
-    try:
-        import msgpack
-
-        data = sub.recv()
-        return msgpack.unpackb(data, raw=False)
-    except Exception:  # timeout or error
-        return None
-
-
-class _RollingBuffer:
-    """Fixed-size rolling buffer backed by collections.deque."""
-
-    def __init__(self, size: int) -> None:
-        self._buf: collections.deque[float] = collections.deque([0.0] * size, maxlen=size)
-
-    def push(self, v: float) -> None:
-        self._buf.append(v)
-
-    def array(self) -> np.ndarray:
-        return np.array(self._buf)
 
 
 def main() -> None:
@@ -81,8 +43,8 @@ def main() -> None:
 
     sub = connect_subscriber(args.address)
 
-    angles_buf = _RollingBuffer(WINDOW)
-    intensity_buf = _RollingBuffer(WINDOW)
+    angles_buf = RollingBuffer(WINDOW)
+    intensity_buf = RollingBuffer(WINDOW)
     x = np.arange(WINDOW)
 
     fig, (ax_angle, ax_intensity) = plt.subplots(2, 1, figsize=(10, 6))
@@ -126,12 +88,9 @@ def main() -> None:
 
         return line_angle, line_intensity
 
-    ani = animation.FuncAnimation(fig, update, interval=50, blit=False)
+    ani = animation.FuncAnimation(fig, update, interval=50, blit=False)  # noqa: F841 — kept alive by plt.show()
     plt.tight_layout()
     plt.show()
-
-    # Keep reference so GC doesn't collect the animation
-    _ = ani
 
 
 if __name__ == "__main__":
