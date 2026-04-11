@@ -37,6 +37,9 @@ _S8_u = {"nbytes": 1, "min": 0, "max": 0xFF, "unsigned": False}
 _S16 = {"nbytes": 2, "min": -32768, "max": 32767, "unsigned": False}
 
 COMMANDS: dict[str, dict[str, Any]] = {
+    # Note: some IDs are reused across commands with different arg counts.
+    # The wire protocol uses the total-byte-count prefix to disambiguate.
+    # Command lookups are by name (dict key), not by ID, so there is no collision here.
     # 1 byte commands (id only, no args):
     "start":                    {"id": 0x20, "args": []},
     "stop":                     {"id": 0x30, "args": []},
@@ -241,7 +244,8 @@ class LedPanelsPlugin(OutputPlugin):
                 gain_x, bias_x, gain_y, bias_y = self.compute_velocity(state)
                 data = self.bytes_from_command("send_gain_bias", [gain_x, bias_x, gain_y, bias_y])
         else:
-            # voltage method: not fully implemented yet; skip
+            # voltage method: the controller handles mapping from its analog inputs.
+            # Initialization commands were sent in start(); no per-frame serial writes needed.
             return
 
         try:
@@ -260,7 +264,7 @@ class LedPanelsPlugin(OutputPlugin):
             try:
                 self._serial.write(self.bytes_from_command("stop", []))
             except Exception:
-                pass
+                logger.warning("Failed to send stop command to LED panels")
             try:
                 self._serial.close()
             except Exception:
@@ -356,8 +360,9 @@ class LedPanelsPlugin(OutputPlugin):
             data = self._queue.get()
             if data is None:  # sentinel to stop
                 break
-            if self._serial is not None:
+            serial = self._serial
+            if serial is not None:
                 try:
-                    self._serial.write(data)
+                    serial.write(data)
                 except Exception:
                     logger.warning("LED panels serial write failed")

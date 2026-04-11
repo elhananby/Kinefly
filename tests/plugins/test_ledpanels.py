@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from unittest.mock import MagicMock, patch
 
 from kinefly.core.types import BodyPartState, FlyState
@@ -138,7 +139,6 @@ def test_on_flystate_puts_bytes_in_queue():
         state = _make_state(left_major=1.0, right_major=0.0)
         plugin.on_flystate(state)
         # Give thread a moment to drain
-        import time
         time.sleep(0.05)
         plugin.stop()
 
