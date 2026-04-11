@@ -10,6 +10,8 @@ import yaml
 
 _SUBSTITUTION_RE = re.compile(r"\$\((?:env|optenv|find)\s+[^)]+\)")
 
+# ROS-internal or camera-driver-specific params that have no equivalent in the
+# new config format and should be silently ignored.
 _SKIP_PARAMS = frozenset([
     "parameterfile",
     "filenameBackground",
@@ -55,9 +57,9 @@ _PHIDGETS_TOP_KEYS = frozenset(["autorange", "serial"])
 _LEDPANELS_TOP_KEYS = frozenset(["axis", "method", "mode", "pattern_id"])
 
 
-def parse_launch_file(path: Path) -> tuple[dict[str, tuple[str, str]], list[str]]:
+def parse_launch_file(path: Path) -> tuple[dict[str, tuple[str | None, str]], list[str]]:
     """Parse a .launch XML file and return (flat {name: (type, value)} dict, warnings)."""
-    params: dict[str, tuple[str, str]] = {}
+    params: dict[str, tuple[str | None, str]] = {}
     file_warnings: list[str] = []
     try:
         tree = ET.parse(path)
@@ -158,6 +160,8 @@ def _handle_phidgets_param(
     """
     Process a flystate2phidgetsanalog/* param and populate config["phidgets"].
     Returns True if the param was recognised and handled.
+    Returns True even for unrecognised params with the right prefix, to prevent
+    double-reporting in the fallback path.
     """
     prefix = "flystate2phidgetsanalog/"
     if not name.startswith(prefix):
@@ -202,6 +206,8 @@ def _handle_ledpanels_param(
     """
     Process a flystate2ledpanels/* param and populate config["ledpanels"].
     Returns True if the param was recognised and handled.
+    Returns True even for unrecognised params with the right prefix, to prevent
+    double-reporting in the fallback path.
     """
     prefix = "flystate2ledpanels/"
     if not name.startswith(prefix):
@@ -252,6 +258,11 @@ def convert_rig_dir(launch_dir: Path) -> tuple[dict, list[str]]:
         fpath = launch_dir / fname
         if fpath.exists():
             file_params, file_warnings = parse_launch_file(fpath)
+            for key, new_val in file_params.items():
+                if key in all_params and all_params[key] != new_val:
+                    warnings.append(
+                        f"Param '{key}' defined in multiple files; last value wins"
+                    )
             all_params.update(file_params)
             warnings.extend(file_warnings)
             files_parsed += 1

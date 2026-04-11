@@ -53,6 +53,12 @@ def test_set_nested():
     assert d == {"a": {"b": {"c": 42}}}
 
 
+def test_set_nested_single_key():
+    d = {}
+    set_nested(d, ("key",), 42)
+    assert d == {"key": 42}
+
+
 def test_convert_rig_dir_basic(tmp_path):
     launch = tmp_path / "params_kinefly.launch"
     launch.write_text(textwrap.dedent("""
@@ -116,7 +122,8 @@ def test_convert_rig_dir_ledpanels(tmp_path):
     assert config["ledpanels"]["coeff_usb"]["xl1"] == pytest.approx(1.0)
 
 
-def test_substitution_generates_warning(tmp_path):
+def test_skipped_params_do_not_generate_warnings(tmp_path):
+    """Params in _SKIP_PARAMS (e.g. parameterfile) should not emit substitution warnings."""
     launch = tmp_path / "params_kinefly.launch"
     launch.write_text(textwrap.dedent("""
         <launch>
@@ -124,9 +131,20 @@ def test_substitution_generates_warning(tmp_path):
         </launch>
     """))
     config, warnings = convert_rig_dir(tmp_path)
-    # parameterfile is in skip list, so no warning about the substitution
-    # But any non-skip param with a substitution should warn
-    assert isinstance(warnings, list)
+    # parameterfile is in _SKIP_PARAMS so no substitution warning should be emitted
+    assert warnings == []
+
+
+def test_substitution_in_non_skip_param_generates_warning(tmp_path):
+    """A non-skipped param containing a substitution expression should emit a warning."""
+    launch = tmp_path / "params_kinefly.launch"
+    launch.write_text(textwrap.dedent("""
+        <launch>
+            <param name="rc_background" type="string" value="$(env SOME_VAR)" />
+        </launch>
+    """))
+    config, warnings = convert_rig_dir(tmp_path)
+    assert any("substitution" in w or "$(env" in w for w in warnings)
 
 
 def test_substitution_non_skip_generates_warning(tmp_path):
@@ -243,3 +261,11 @@ def test_conditional_block_generates_warning(tmp_path):
     assert any("conditional" in w.lower() or "if" in w for w in file_warnings)
     # The param is still parsed despite the conditional
     assert "foo" in params
+
+
+def test_parse_launch_file_invalid_xml(tmp_path):
+    """Malformed XML raises ValueError (not ET.ParseError) from parse_launch_file."""
+    launch = tmp_path / "bad.launch"
+    launch.write_text('<launch><param name="foo" type="int" value="1">')
+    with pytest.raises(ValueError):
+        parse_launch_file(launch)
