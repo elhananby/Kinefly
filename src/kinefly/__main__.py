@@ -31,8 +31,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--headless",
         action="store_true",
-        default=True,
-        help="Run without GUI (currently always headless)",
+        default=False,
+        help="Run without GUI (GUI not yet implemented; this flag is currently ignored)",
     )
     parser.add_argument(
         "--record",
@@ -101,7 +101,9 @@ def _load_gui_state(state_file: str) -> dict:
     path = Path(state_file).expanduser()
     if not path.exists():
         logger.warning(
-            "GUI state file not found: %s — running with null trackers", path
+            "GUI state file not found: %s"
+            " — hinge positions will use defaults; tracking may be inaccurate",
+            path,
         )
         return {}
     with open(path) as f:
@@ -128,8 +130,10 @@ def _build_fly_params(config, gui_state: dict) -> dict:
 
     params.setdefault("gui", {})
     params["gui"]["windows"] = False  # no popup windows in headless mode
-    params["wingbeat_min"] = tracking.aux.wingbeat_min
-    params["wingbeat_max"] = tracking.aux.wingbeat_max
+    aux = getattr(tracking, "aux", None)
+    if aux is not None:
+        params["wingbeat_min"] = aux.wingbeat_min
+        params["wingbeat_max"] = aux.wingbeat_max
 
     return params
 
@@ -163,12 +167,12 @@ def main() -> int:
 
     # Register plugins
     plugins = []
+    from dataclasses import asdict
+
     if config.phidgets:
         from kinefly.plugins.phidgets import PhidgetsPlugin
 
         plugin = PhidgetsPlugin()
-        from dataclasses import asdict
-
         plugin.start(asdict(config.phidgets))
         bus.register(plugin.on_flystate)
         plugins.append(plugin)
@@ -176,8 +180,6 @@ def main() -> int:
         from kinefly.plugins.ledpanels import LedPanelsPlugin
 
         plugin = LedPanelsPlugin()
-        from dataclasses import asdict
-
         plugin.start(asdict(config.ledpanels))
         bus.register(plugin.on_flystate)
         plugins.append(plugin)
@@ -198,6 +200,7 @@ def main() -> int:
         logger.exception("Failed to open camera")
         for p in plugins:
             p.stop()
+        bus.stop_zmq()
         return 1
 
     # Optional recorder
@@ -246,7 +249,7 @@ def main() -> int:
         camera.close()
         if recorder is not None:
             recorder.stop()
-            logger.info("Recording saved to %s", recorder.output_path)
+            logger.info("Recording saved to %s", out_path)
         for p in plugins:
             p.stop()
         bus.stop_zmq()

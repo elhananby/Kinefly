@@ -13,7 +13,7 @@ def test_arg_parser_defaults():
     parser = build_arg_parser()
     args = parser.parse_args([])
     assert args.rig == Path("rigs/example/config.yaml")
-    assert args.headless is True
+    assert args.headless is False
     assert args.record is False
     assert args.zmq is None
     assert args.verbose is False
