@@ -15,26 +15,66 @@ def _default_phidgets_channels() -> list[PhidgetsChannelConfig]:
     return [
         PhidgetsChannelConfig(
             coefficients={
-                "offset": 0, "l1": 1.0, "l2": 0, "lr": 0, "r1": 0, "r2": 0,
-                "rr": 0, "ha": 0, "hr": 0, "aa": 0, "ar": 0, "xi": 0,
+                "offset": 0,
+                "l1": 1.0,
+                "l2": 0,
+                "lr": 0,
+                "r1": 0,
+                "r2": 0,
+                "rr": 0,
+                "ha": 0,
+                "hr": 0,
+                "aa": 0,
+                "ar": 0,
+                "xi": 0,
             }
         ),
         PhidgetsChannelConfig(
             coefficients={
-                "offset": 0, "l1": 0, "l2": 0, "lr": 0, "r1": 1.0, "r2": 0,
-                "rr": 0, "ha": 0, "hr": 0, "aa": 0, "ar": 0, "xi": 0,
+                "offset": 0,
+                "l1": 0,
+                "l2": 0,
+                "lr": 0,
+                "r1": 1.0,
+                "r2": 0,
+                "rr": 0,
+                "ha": 0,
+                "hr": 0,
+                "aa": 0,
+                "ar": 0,
+                "xi": 0,
             }
         ),
         PhidgetsChannelConfig(
             coefficients={
-                "offset": 0, "l1": 1.0, "l2": 0, "lr": 0, "r1": -1.0, "r2": 0,
-                "rr": 0, "ha": 0, "hr": 0, "aa": 0, "ar": 0, "xi": 0,
+                "offset": 0,
+                "l1": 1.0,
+                "l2": 0,
+                "lr": 0,
+                "r1": -1.0,
+                "r2": 0,
+                "rr": 0,
+                "ha": 0,
+                "hr": 0,
+                "aa": 0,
+                "ar": 0,
+                "xi": 0,
             }
         ),
         PhidgetsChannelConfig(
             coefficients={
-                "offset": 0, "l1": 1.0, "l2": 0, "lr": 0, "r1": 1.0, "r2": 0,
-                "rr": 0, "ha": 0, "hr": 0, "aa": 0, "ar": 0, "xi": 0,
+                "offset": 0,
+                "l1": 1.0,
+                "l2": 0,
+                "lr": 0,
+                "r1": 1.0,
+                "r2": 0,
+                "rr": 0,
+                "ha": 0,
+                "hr": 0,
+                "aa": 0,
+                "ar": 0,
+                "xi": 0,
             }
         ),
     ]
@@ -43,17 +83,38 @@ def _default_phidgets_channels() -> list[PhidgetsChannelConfig]:
 def _default_led_coeff_voltage() -> dict[str, float]:
     """Return default LED panel voltage coefficients."""
     return {
-        "adc0": 1, "adc1": 0, "adc2": 0, "adc3": 0, "funcx": 0, "funcy": 0,
+        "adc0": 1,
+        "adc1": 0,
+        "adc2": 0,
+        "adc3": 0,
+        "funcx": 0,
+        "funcy": 0,
     }
 
 
 def _default_led_coeff_usb() -> dict[str, float]:
     """Return default LED panel USB coefficients."""
     return {
-        "x0": 0, "xl1": 1.0, "xl2": 0, "xr1": -1.0, "xr2": 0,
-        "xha": 0, "xhr": 0, "xaa": 0, "xar": 0, "xxi": 0,
-        "y0": 0, "yl1": 0, "yl2": 0, "yr1": 0, "yr2": 0,
-        "yha": 0, "yhr": 0, "yaa": 0, "yar": 0, "yxi": 0,
+        "x0": 0,
+        "xl1": 1.0,
+        "xl2": 0,
+        "xr1": -1.0,
+        "xr2": 0,
+        "xha": 0,
+        "xhr": 0,
+        "xaa": 0,
+        "xar": 0,
+        "xxi": 0,
+        "y0": 0,
+        "yl1": 0,
+        "yl2": 0,
+        "yr1": 0,
+        "yr2": 0,
+        "yha": 0,
+        "yhr": 0,
+        "yaa": 0,
+        "yar": 0,
+        "yxi": 0,
     }
 
 
@@ -117,19 +178,29 @@ class ZmqConfig:
 @dataclass
 class PhidgetsChannelConfig:
     enable: bool = True
-    coefficients: dict[str, float] = field(default_factory=lambda: {
-        "offset": 0, "l1": 0, "l2": 0, "lr": 0, "r1": 0, "r2": 0,
-        "rr": 0, "ha": 0, "hr": 0, "aa": 0, "ar": 0, "xi": 0,
-    })
+    coefficients: dict[str, float] = field(
+        default_factory=lambda: {
+            "offset": 0,
+            "l1": 0,
+            "l2": 0,
+            "lr": 0,
+            "r1": 0,
+            "r2": 0,
+            "rr": 0,
+            "ha": 0,
+            "hr": 0,
+            "aa": 0,
+            "ar": 0,
+            "xi": 0,
+        }
+    )
 
 
 @dataclass
 class PhidgetsConfig:
     serial: int = 0
     autorange: bool = False
-    channels: list[PhidgetsChannelConfig] = field(
-        default_factory=_default_phidgets_channels
-    )
+    channels: list[PhidgetsChannelConfig] = field(default_factory=_default_phidgets_channels)
 
 
 @dataclass
@@ -140,12 +211,8 @@ class LedPanelsConfig:
     mode: str = "velocity"
     axis: str = "x"
     pattern_id: int = 1
-    coeff_voltage: dict[str, float] = field(
-        default_factory=_default_led_coeff_voltage
-    )
-    coeff_usb: dict[str, float] = field(
-        default_factory=_default_led_coeff_usb
-    )
+    coeff_voltage: dict[str, float] = field(default_factory=_default_led_coeff_voltage)
+    coeff_usb: dict[str, float] = field(default_factory=_default_led_coeff_usb)
 
 
 @dataclass

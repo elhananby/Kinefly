@@ -64,8 +64,7 @@ class VideoRecorder:
         encoder = detect_encoder()
         if encoder is None:
             raise RuntimeError(
-                "No compatible H.264 encoder found. "
-                "Install ffmpeg with libx264 support."
+                "No compatible H.264 encoder found. Install ffmpeg with libx264 support."
             )
 
         if output_path is None:
@@ -79,12 +78,18 @@ class VideoRecorder:
         cmd = [
             "ffmpeg",
             "-y",
-            "-f", "rawvideo",
-            "-pix_fmt", "gray",
-            "-s", f"{width}x{height}",
-            "-r", str(fps),
-            "-i", "pipe:0",
-            "-c:v", encoder,
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "gray",
+            "-s",
+            f"{width}x{height}",
+            "-r",
+            str(fps),
+            "-i",
+            "pipe:0",
+            "-c:v",
+            encoder,
             output_path,
         ]
 

@@ -116,9 +116,7 @@ class PolarTransforms:
     def __init__(self) -> None:
         self._transforms: dict = {}
 
-    def _get_transform_polar_log(
-        self, i_0, j_0, i_n, j_n, nRho, dRho, nTheta, theta_0, theta_1
-    ):
+    def _get_transform_polar_log(self, i_0, j_0, i_n, j_n, nRho, dRho, nTheta, theta_0, theta_1):
         transform = self._transforms.get((i_0, j_0, i_n, j_n, nRho, nTheta, theta_0, theta_1))
 
         if transform is None:
@@ -197,8 +195,19 @@ class PolarTransforms:
         return imgTransformed
 
     def _get_transform_polar_elliptical(
-        self, i_0, j_0, i_n, j_n, r_axial_ortho, drStrip, angleEllipse, nRho, nTheta,
-        theta_0, theta_1, rClip,
+        self,
+        i_0,
+        j_0,
+        i_n,
+        j_n,
+        r_axial_ortho,
+        drStrip,
+        angleEllipse,
+        nRho,
+        nTheta,
+        theta_0,
+        theta_1,
+        rClip,
     ):
         (raxial, rortho) = r_axial_ortho
         nTheta = max(1, nTheta)
@@ -260,9 +269,9 @@ class PolarTransforms:
                 (np.array(rho_k), np.array(theta_k)),
                 (np.array(i_k), np.array(j_k)),
             )
-            self._transforms[
-                i_0, j_0, i_n, j_n, nRho, drStrip, nTheta, theta_0, theta_1, rClip
-            ] = transform
+            self._transforms[i_0, j_0, i_n, j_n, nRho, drStrip, nTheta, theta_0, theta_1, rClip] = (
+                transform
+            )
 
         return transform
 

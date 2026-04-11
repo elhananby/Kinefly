@@ -1,7 +1,7 @@
 import numpy as np
 
-from kinefly.fly import Fly
 from kinefly.core.types import FlyState
+from kinefly.fly import Fly
 
 
 def test_fly_init_default():

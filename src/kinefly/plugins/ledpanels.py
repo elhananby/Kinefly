@@ -41,64 +41,64 @@ COMMANDS: dict[str, dict[str, Any]] = {
     # The wire protocol uses the total-byte-count prefix to disambiguate.
     # Command lookups are by name (dict key), not by ID, so there is no collision here.
     # 1 byte commands (id only, no args):
-    "start":                    {"id": 0x20, "args": []},
-    "stop":                     {"id": 0x30, "args": []},
-    "all_off":                  {"id": 0x00, "args": []},
-    "all_on":                   {"id": 0xFF, "args": []},
-    "clear":                    {"id": 0xF0, "args": []},
-    "start_w_trig":             {"id": 0x25, "args": []},
-    "stop_w_trig":              {"id": 0x35, "args": []},
-    "led_tog":                  {"id": 0x50, "args": []},
-    "ctr_reset":                {"id": 0x60, "args": []},
-    "bench_pattern":            {"id": 0x70, "args": []},
-    "laser_on":                 {"id": 0x10, "args": []},
-    "laser_off":                {"id": 0x11, "args": []},
-    "ident_compress_on":        {"id": 0x12, "args": []},
-    "ident_compress_off":       {"id": 0x13, "args": []},
-    "sync_sd_info":             {"id": 0x14, "args": []},
-    "get_version":              {"id": 0x15, "args": []},
-    "show_bus_number":          {"id": 0x16, "args": []},
-    "quiet_mode_on":            {"id": 0x17, "args": []},
-    "quiet_mode_off":           {"id": 0x18, "args": []},
-    "update_gui_info":          {"id": 0x19, "args": []},
-    "controller_mode":          {"id": 0x21, "args": []},
-    "pc_dumping_mode":          {"id": 0x22, "args": []},
-    "enable_extern_trig":       {"id": 0x23, "args": []},
-    "disable_extern_trig":      {"id": 0x24, "args": []},
+    "start": {"id": 0x20, "args": []},
+    "stop": {"id": 0x30, "args": []},
+    "all_off": {"id": 0x00, "args": []},
+    "all_on": {"id": 0xFF, "args": []},
+    "clear": {"id": 0xF0, "args": []},
+    "start_w_trig": {"id": 0x25, "args": []},
+    "stop_w_trig": {"id": 0x35, "args": []},
+    "led_tog": {"id": 0x50, "args": []},
+    "ctr_reset": {"id": 0x60, "args": []},
+    "bench_pattern": {"id": 0x70, "args": []},
+    "laser_on": {"id": 0x10, "args": []},
+    "laser_off": {"id": 0x11, "args": []},
+    "ident_compress_on": {"id": 0x12, "args": []},
+    "ident_compress_off": {"id": 0x13, "args": []},
+    "sync_sd_info": {"id": 0x14, "args": []},
+    "get_version": {"id": 0x15, "args": []},
+    "show_bus_number": {"id": 0x16, "args": []},
+    "quiet_mode_on": {"id": 0x17, "args": []},
+    "quiet_mode_off": {"id": 0x18, "args": []},
+    "update_gui_info": {"id": 0x19, "args": []},
+    "controller_mode": {"id": 0x21, "args": []},
+    "pc_dumping_mode": {"id": 0x22, "args": []},
+    "enable_extern_trig": {"id": 0x23, "args": []},
+    "disable_extern_trig": {"id": 0x24, "args": []},
     "read_and_set_max_voltage": {"id": 0x26, "args": []},
-    "g_level_0":                {"id": 0x90, "args": []},
-    "g_level_1":                {"id": 0x91, "args": []},
-    "g_level_2":                {"id": 0x92, "args": []},
-    "g_level_3":                {"id": 0x93, "args": []},
-    "g_level_4":                {"id": 0x94, "args": []},
-    "g_level_5":                {"id": 0x95, "args": []},
-    "g_level_6":                {"id": 0x96, "args": []},
-    "g_level_7":                {"id": 0x97, "args": []},
-    "g_level_8":                {"id": 0x98, "args": []},
-    "g_level_9":                {"id": 0x99, "args": []},
-    "g_level_10":               {"id": 0x9A, "args": []},
-    "g_level_11":               {"id": 0x9B, "args": []},
-    "g_level_12":               {"id": 0x9C, "args": []},
-    "g_level_13":               {"id": 0x9D, "args": []},
-    "g_level_14":               {"id": 0x9E, "args": []},
-    "g_level_15":               {"id": 0x9F, "args": []},
+    "g_level_0": {"id": 0x90, "args": []},
+    "g_level_1": {"id": 0x91, "args": []},
+    "g_level_2": {"id": 0x92, "args": []},
+    "g_level_3": {"id": 0x93, "args": []},
+    "g_level_4": {"id": 0x94, "args": []},
+    "g_level_5": {"id": 0x95, "args": []},
+    "g_level_6": {"id": 0x96, "args": []},
+    "g_level_7": {"id": 0x97, "args": []},
+    "g_level_8": {"id": 0x98, "args": []},
+    "g_level_9": {"id": 0x99, "args": []},
+    "g_level_10": {"id": 0x9A, "args": []},
+    "g_level_11": {"id": 0x9B, "args": []},
+    "g_level_12": {"id": 0x9C, "args": []},
+    "g_level_13": {"id": 0x9D, "args": []},
+    "g_level_14": {"id": 0x9E, "args": []},
+    "g_level_15": {"id": 0x9F, "args": []},
     # 2 byte commands (1 arg):
-    "reset":            {"id": 0x01, "args": [_U8]},
-    "display":          {"id": 0x02, "args": [_U8]},
-    "set_pattern_id":   {"id": 0x03, "args": [_U8_99]},
-    "adc_test":         {"id": 0x04, "args": [_U8_7]},
-    "dio_test":         {"id": 0x05, "args": [_U8_7]},
+    "reset": {"id": 0x01, "args": [_U8]},
+    "display": {"id": 0x02, "args": [_U8]},
+    "set_pattern_id": {"id": 0x03, "args": [_U8_99]},
+    "adc_test": {"id": 0x04, "args": [_U8_7]},
+    "dio_test": {"id": 0x05, "args": [_U8_7]},
     "set_trigger_rate": {"id": 0x06, "args": [_U8]},
     # 3 byte commands (2 args):
-    "set_mode":       {"id": 0x10, "args": [_U8_6, _U8_6]},
-    "address":        {"id": 0xFF, "args": [_U8, _U8]},
+    "set_mode": {"id": 0x10, "args": [_U8_6, _U8_6]},
+    "address": {"id": 0xFF, "args": [_U8, _U8]},
     "set_posfunc_id": {"id": 0x15, "args": [_U8, _U8]},
     "set_velfunc_id": {"id": 0x20, "args": [_U8, _U8]},
     "set_funcx_freq": {"id": 0x25, "args": [_U16_500]},
     "set_funcy_freq": {"id": 0x30, "args": [_U16_500]},
     "set_max_voltage": {"id": 0x35, "args": [_U8_10, _U8_10]},
     # 5 byte commands:
-    "set_position":   {"id": 0x70, "args": [_U16_2047, _U16_2047]},
+    "set_position": {"id": 0x70, "args": [_U16_2047, _U16_2047]},
     "send_gain_bias": {"id": 0x71, "args": [_S8, _S8, _S8, _S8]},
     # 7 byte commands:
     "set_mode_pos_custom_x": {"id": 0x63, "args": [_S8_u] * 6},
@@ -116,14 +116,35 @@ _COEFF_KEYS_X = ["x0", "xl1", "xl2", "xr1", "xr2", "xha", "xhr", "xaa", "xar", "
 _COEFF_KEYS_Y = ["y0", "yl1", "yl2", "yr1", "yr2", "yha", "yhr", "yaa", "yar", "yxi"]
 
 _DEFAULT_COEFF_USB: dict[str, float] = {
-    "x0": 0.0, "xl1": 1.0, "xl2": 0.0, "xr1": -1.0, "xr2": 0.0,
-    "xha": 0.0, "xhr": 0.0, "xaa": 0.0, "xar": 0.0, "xxi": 0.0,
-    "y0": 0.0, "yl1": 0.0, "yl2": 0.0, "yr1": 0.0,  "yr2": 0.0,
-    "yha": 0.0, "yhr": 0.0, "yaa": 0.0, "yar": 0.0, "yxi": 0.0,
+    "x0": 0.0,
+    "xl1": 1.0,
+    "xl2": 0.0,
+    "xr1": -1.0,
+    "xr2": 0.0,
+    "xha": 0.0,
+    "xhr": 0.0,
+    "xaa": 0.0,
+    "xar": 0.0,
+    "xxi": 0.0,
+    "y0": 0.0,
+    "yl1": 0.0,
+    "yl2": 0.0,
+    "yr1": 0.0,
+    "yr2": 0.0,
+    "yha": 0.0,
+    "yhr": 0.0,
+    "yaa": 0.0,
+    "yar": 0.0,
+    "yxi": 0.0,
 }
 
 _DEFAULT_COEFF_VOLTAGE: dict[str, int] = {
-    "adc0": 1, "adc1": 0, "adc2": 0, "adc3": 0, "funcx": 0, "funcy": 0,
+    "adc0": 1,
+    "adc1": 0,
+    "adc2": 0,
+    "adc3": 0,
+    "funcx": 0,
+    "funcy": 0,
 }
 
 
@@ -332,18 +353,28 @@ class LedPanelsPlugin(OutputPlugin):
         Elements: [1, leftMajor, leftMinor, rightMajor, rightMinor,
                    headAngle, headRadius, abdomenAngle, abdomenRadius, auxIntensity]
         """
-        left_major  = state.left.angles[0]  if len(state.left.angles)  > 0 else 0.0
-        left_minor  = state.left.angles[1]  if len(state.left.angles)  > 1 else 0.0
+        left_major = state.left.angles[0] if len(state.left.angles) > 0 else 0.0
+        left_minor = state.left.angles[1] if len(state.left.angles) > 1 else 0.0
         right_major = state.right.angles[0] if len(state.right.angles) > 0 else 0.0
         right_minor = state.right.angles[1] if len(state.right.angles) > 1 else 0.0
-        head_angle  = state.head.angles[0]  if len(state.head.angles)  > 0 else 0.0
-        head_radius = state.head.radii[0]   if len(state.head.radii)   > 0 else 0.0
-        abd_angle   = state.abdomen.angles[0] if len(state.abdomen.angles) > 0 else 0.0
-        abd_radius  = state.abdomen.radii[0]  if len(state.abdomen.radii)  > 0 else 0.0
+        head_angle = state.head.angles[0] if len(state.head.angles) > 0 else 0.0
+        head_radius = state.head.radii[0] if len(state.head.radii) > 0 else 0.0
+        abd_angle = state.abdomen.angles[0] if len(state.abdomen.angles) > 0 else 0.0
+        abd_radius = state.abdomen.radii[0] if len(state.abdomen.radii) > 0 else 0.0
 
         return np.array(
-            [1.0, left_major, left_minor, right_major, right_minor,
-             head_angle, head_radius, abd_angle, abd_radius, state.aux.intensity],
+            [
+                1.0,
+                left_major,
+                left_minor,
+                right_major,
+                right_minor,
+                head_angle,
+                head_radius,
+                abd_angle,
+                abd_radius,
+                state.aux.intensity,
+            ],
             dtype=np.float32,
         )
 

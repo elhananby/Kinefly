@@ -145,13 +145,8 @@ class TipTracker(MotionTrackedBodypartPolar):
                     self.params["gui"][self.name]["angle_hi"]
                     - self.params["gui"][self.name]["angle_lo"]
                 ) / float(imgNow.shape[1])
-                angle_b = (
-                    self.params["gui"][self.name]["angle_lo"]
-                    + self.iAngle * anglePerPixel
-                )
-                angle_p = (
-                    self.transform_angle_p_from_b(angle_b) + np.pi
-                ) % (2 * np.pi) - np.pi
+                angle_b = self.params["gui"][self.name]["angle_lo"] + self.iAngle * anglePerPixel
+                angle_p = (self.transform_angle_p_from_b(angle_b) + np.pi) % (2 * np.pi) - np.pi
                 self.state.angles = [angle_p]
                 self.state.gradients = self.detector.diffs
 

@@ -57,9 +57,7 @@ class HarvesterCamera(CameraSource):
             raise RuntimeError("No GenICam cameras found")
 
         if self._serial:
-            self._acquirer = self._harvester.create(
-                {"serial_number": self._serial}
-            )
+            self._acquirer = self._harvester.create({"serial_number": self._serial})
         else:
             self._acquirer = self._harvester.create()
 

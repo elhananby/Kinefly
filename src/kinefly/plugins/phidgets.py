@@ -55,7 +55,8 @@ class PhidgetsPlugin(OutputPlugin):
                     coefficients=ch.get("coefficients", {}),
                 )
                 for ch in config.get("channels", [])
-            ] or PhidgetsConfig().channels,
+            ]
+            or PhidgetsConfig().channels,
         )
         self._coefficients = self._build_coefficient_matrix(self._config.channels)
         self._enable = [ch.enable for ch in self._config.channels]
@@ -74,9 +75,7 @@ class PhidgetsPlugin(OutputPlugin):
             self._attached = True
             logger.info("PhidgetsAnalog attached (serial=%s)", self._config.serial)
         except ImportError:
-            logger.warning(
-                "Phidgets22 not installed. Install with: pip install kinefly[phidgets]"
-            )
+            logger.warning("Phidgets22 not installed. Install with: pip install kinefly[phidgets]")
         except Exception:
             logger.exception("Failed to connect to PhidgetsAnalog")
 
@@ -121,10 +120,16 @@ class PhidgetsPlugin(OutputPlugin):
         state_vec = np.array(
             [
                 1.0,
-                angle1_left, angle2_left, radius_left,
-                angle1_right, angle2_right, radius_right,
-                angle_head, radius_head,
-                angle_abdomen, radius_abdomen,
+                angle1_left,
+                angle2_left,
+                radius_left,
+                angle1_right,
+                angle2_right,
+                radius_right,
+                angle_head,
+                radius_head,
+                angle_abdomen,
+                radius_abdomen,
                 state.aux.intensity,
             ],
             dtype=np.float32,

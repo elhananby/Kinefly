@@ -89,8 +89,7 @@ class Fly:
                 )
             else:
                 logger.warning(
-                    "Head tracker parameter must be one of "
-                    "['area', 'edge', 'tip', 'intensity']"
+                    "Head tracker parameter must be one of ['area', 'edge', 'tip', 'intensity']"
                 )
 
             # Create the abdomen tracker.
@@ -112,8 +111,7 @@ class Fly:
                 )
             else:
                 logger.warning(
-                    "Abdomen tracker parameter must be one of "
-                    "['area', 'edge', 'tip', 'intensity']"
+                    "Abdomen tracker parameter must be one of ['area', 'edge', 'tip', 'intensity']"
                 )
 
             # Create the right wing tracker.
@@ -209,9 +207,7 @@ class Fly:
             np.array(pt1), np.array(pt2), np.array(pt3), np.array(pt4)
         )
 
-        r = max(
-            params["gui"]["left"]["radius_outer"], params["gui"]["right"]["radius_outer"]
-        )
+        r = max(params["gui"]["left"]["radius_outer"], params["gui"]["right"]["radius_outer"])
         self.angleBody_i = self.get_bodyangle_i()
         cos_a = np.cos(self.angleBody_i)
         sin_a = np.sin(self.angleBody_i)
@@ -267,9 +263,7 @@ class Fly:
                 self.aux.bValidMask = True
 
     def get_bodyangle_i(self):
-        angle_i = imaging.get_angle_from_points_i(
-            self.abdomen.ptHinge_i, self.head.ptHinge_i
-        )
+        angle_i = imaging.get_angle_from_points_i(self.abdomen.ptHinge_i, self.head.ptHinge_i)
         angleBody_i = angle_i
         return angleBody_i
 
@@ -352,9 +346,7 @@ class Fly:
         gui = params.get("gui", {})
 
         head = self.head.state if gui.get("head", {}).get("track") else BodyPartState()
-        abdomen = (
-            self.abdomen.state if gui.get("abdomen", {}).get("track") else BodyPartState()
-        )
+        abdomen = self.abdomen.state if gui.get("abdomen", {}).get("track") else BodyPartState()
         left = self.left.state if gui.get("left", {}).get("track") else BodyPartState()
         right = self.right.state if gui.get("right", {}).get("track") else BodyPartState()
         aux = self.aux.state if gui.get("aux", {}).get("track") else BodyPartState()
@@ -372,9 +364,7 @@ class Fly:
     def draw(self, image):
         # Draw line to indicate the body axis.
         if self.ptBodyIndicator1 is not None and self.ptBodyIndicator2 is not None:
-            cv2.line(
-                image, self.ptBodyIndicator1, self.ptBodyIndicator2, self.bgra_body, 1
-            )
+            cv2.line(image, self.ptBodyIndicator1, self.ptBodyIndicator2, self.bgra_body, 1)
 
         self.axis.draw(image)
         self.head.draw(image)

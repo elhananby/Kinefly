@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from kinefly.gui.handles import Handle
 from kinefly.gui.ui_colors import bgra_dict

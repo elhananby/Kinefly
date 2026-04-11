@@ -12,21 +12,23 @@ _SUBSTITUTION_RE = re.compile(r"\$\((?:env|optenv|find)\s+[^)]+\)")
 
 # ROS-internal or camera-driver-specific params that have no equivalent in the
 # new config format and should be silently ignored.
-_SKIP_PARAMS = frozenset([
-    "parameterfile",
-    "filenameBackground",
-    "image_topic",
-    "n_queue_images",
-    "ExposureAuto",
-    "GainAuto",
-    "AcquisitionMode",
-    "TriggerMode",
-    "TriggerSource",
-    "softwaretriggerrate",
-    "frame_id",
-    "mtu",
-    "Acquire",
-])
+_SKIP_PARAMS = frozenset(
+    [
+        "parameterfile",
+        "filenameBackground",
+        "image_topic",
+        "n_queue_images",
+        "ExposureAuto",
+        "GainAuto",
+        "AcquisitionMode",
+        "TriggerMode",
+        "TriggerSource",
+        "softwaretriggerrate",
+        "frame_id",
+        "mtu",
+        "Acquire",
+    ]
+)
 
 # Simple flat mapping: raw param name -> tuple of keys in output config dict
 _KINEFLY_PARAM_MAP: dict[str, tuple[str, ...]] = {
@@ -46,9 +48,7 @@ _KINEFLY_PARAM_MAP: dict[str, tuple[str, ...]] = {
 _BODYPART_PREFIXES = ("head", "abdomen", "left", "right", "aux")
 
 # Phidgets coefficient key remapping: raw suffix -> output key
-_PHIDGETS_COEFF_KEYS = frozenset(
-    ["ha", "hr", "aa", "ar", "l1", "l2", "lr", "r1", "r2", "rr", "xi"]
-)
+_PHIDGETS_COEFF_KEYS = frozenset(["ha", "hr", "aa", "ar", "l1", "l2", "lr", "r1", "r2", "rr", "xi"])
 
 # Phidgets top-level keys (non-channel)
 _PHIDGETS_TOP_KEYS = frozenset(["autorange", "serial"])
@@ -93,20 +93,20 @@ def parse_launch_file(path: Path) -> tuple[dict[str, tuple[str | None, str]], li
         text = elem.text
         if not text or not text.strip():
             file_warnings.append(
-                f"<rosparam param=\"{param_name}\"> in {path.name} has empty text — skipping"
+                f'<rosparam param="{param_name}"> in {path.name} has empty text — skipping'
             )
             continue
         try:
             parsed = yaml.safe_load(text)
         except yaml.YAMLError as exc:
             file_warnings.append(
-                f"<rosparam param=\"{param_name}\"> in {path.name}"
+                f'<rosparam param="{param_name}"> in {path.name}'
                 f" failed YAML parse: {exc} — skipping"
             )
             continue
         if parsed is None:
             file_warnings.append(
-                f"<rosparam param=\"{param_name}\"> in {path.name} parsed as None — skipping"
+                f'<rosparam param="{param_name}"> in {path.name} parsed as None — skipping'
             )
             continue
         if isinstance(parsed, dict):
@@ -167,7 +167,7 @@ def _handle_phidgets_param(
     if not name.startswith(prefix):
         return False
 
-    key = name[len(prefix):]
+    key = name[len(prefix) :]
     phidgets = config.setdefault("phidgets", {})
     value = coerce_value(raw_value, type_hint)
 
@@ -213,7 +213,7 @@ def _handle_ledpanels_param(
     if not name.startswith(prefix):
         return False
 
-    key = name[len(prefix):]
+    key = name[len(prefix) :]
     ledpanels = config.setdefault("ledpanels", {})
     value = coerce_value(raw_value, type_hint)
 
@@ -260,20 +260,14 @@ def convert_rig_dir(launch_dir: Path) -> tuple[dict, list[str]]:
             file_params, file_warnings = parse_launch_file(fpath)
             for key, new_val in file_params.items():
                 if key in all_params and all_params[key] != new_val:
-                    warnings.append(
-                        f"Param '{key}' defined in multiple files; last value wins"
-                    )
+                    warnings.append(f"Param '{key}' defined in multiple files; last value wins")
             all_params.update(file_params)
             warnings.extend(file_warnings)
             files_parsed += 1
 
     if files_parsed == 0:
         found_variants = sorted(launch_dir.glob("params_*.launch"))
-        extra = (
-            f" Found: {', '.join(p.name for p in found_variants)}."
-            if found_variants
-            else ""
-        )
+        extra = f" Found: {', '.join(p.name for p in found_variants)}." if found_variants else ""
         warnings.append(
             f"No recognized launch files found in {launch_dir}. "
             "Expected params_kinefly.launch, params_camera.launch, etc. "
@@ -308,7 +302,7 @@ def convert_rig_dir(launch_dir: Path) -> tuple[dict, list[str]]:
         bodypart_handled = False
         for bp in _BODYPART_PREFIXES:
             if name.startswith(f"{bp}/"):
-                subkey = name[len(bp) + 1:]
+                subkey = name[len(bp) + 1 :]
                 set_nested(config, ("tracking", bp, subkey), value)
                 bodypart_handled = True
                 break
@@ -328,9 +322,7 @@ def convert_rig_dir(launch_dir: Path) -> tuple[dict, list[str]]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Convert legacy ROS launch rig to YAML config"
-    )
+    parser = argparse.ArgumentParser(description="Convert legacy ROS launch rig to YAML config")
     parser.add_argument("launch_dir", type=Path, help="Path to rig launch directory")
     parser.add_argument(
         "-o",

@@ -1,6 +1,3 @@
-import numpy as np
-import pytest
-
 from kinefly.core.types import BodyPartState
 from kinefly.trackers.area import AreaTracker
 

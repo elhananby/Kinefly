@@ -11,7 +11,9 @@ def test_bodypart_state_defaults():
 
 
 def test_bodypart_state_with_values():
-    s = BodyPartState(angles=[0.5, 1.0], gradients=[-0.01], radii=[54.6], freq=200.0, intensity=0.45)
+    s = BodyPartState(
+        angles=[0.5, 1.0], gradients=[-0.01], radii=[54.6], freq=200.0, intensity=0.45
+    )
     assert s.angles == [0.5, 1.0]
     assert s.intensity == 0.45
 

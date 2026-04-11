@@ -42,19 +42,13 @@ class IntensityTracker(IntensityTrackedBodypart):
         self.iCount = 0
         self.state.intensity = 0.0
 
-        self.wingbeat.set(
-            self.params["wingbeat_min"], self.params["wingbeat_max"]
-        )
+        self.wingbeat.set(self.params["wingbeat_min"], self.params["wingbeat_max"])
 
     # update_state()
     #
     def update_state(self):
-        self.state.intensity = (
-            np.sum(self.imgRoiFgMasked).astype(np.float32) / self.mask.sum
-        )
-        self.state.freq = self.wingbeat.freq_from_intensity(
-            self.state.intensity, 1.0 / self.dt
-        )
+        self.state.intensity = np.sum(self.imgRoiFgMasked).astype(np.float32) / self.mask.sum
+        self.state.freq = self.wingbeat.freq_from_intensity(self.state.intensity, 1.0 / self.dt)
 
     # update()
     # Update all the internals given a foreground camera image.

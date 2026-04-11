@@ -1,7 +1,7 @@
 import numpy as np
 
-from kinefly.trackers.edge import EdgeDetectorByIntensityProfile, EdgeTrackerByIntensityProfile
 from kinefly.core.types import BodyPartState
+from kinefly.trackers.edge import EdgeDetectorByIntensityProfile, EdgeTrackerByIntensityProfile
 
 
 def test_edge_detector_init():

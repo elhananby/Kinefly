@@ -40,9 +40,7 @@ class WingbeatDetector:
             self.fs_dict["fs_range_list"],
         )
 
-    def fs_dict_from_wingband(
-        self, fw_min: float, fw_max: float
-    ) -> dict[str, list]:
+    def fs_dict_from_wingband(self, fw_min: float, fw_max: float) -> dict[str, list]:
         fs_range_list = []
         m_list = []
 
@@ -107,9 +105,7 @@ class WingbeatDetector:
 
         return (fbb_min, fbb_max)
 
-    def get_baseband_range_from_framerates(
-        self, framerates: np.ndarray
-    ) -> tuple[bool, np.ndarray]:
+    def get_baseband_range_from_framerates(self, framerates: np.ndarray) -> tuple[bool, np.ndarray]:
         bValid = False
 
         fs_lo = np.min(framerates)

@@ -66,6 +66,7 @@ class EventBus:
             self._zmq_pub = self._zmq_context.socket(zmq.PUB)
             self._zmq_pub.bind(address)
             self._msgpack = msgpack
+            self._zmq_NOBLOCK = zmq.NOBLOCK
             logger.info("ZeroMQ publisher bound to %s", address)
         except ImportError:
             logger.warning(
@@ -87,6 +88,6 @@ class EventBus:
 
         try:
             data = self._msgpack.packb(asdict(state), use_bin_type=True)
-            self._zmq_pub.send(data, zmq.NOBLOCK)
+            self._zmq_pub.send(data, self._zmq_NOBLOCK)
         except Exception:
             logger.exception("Failed to publish state via ZeroMQ")

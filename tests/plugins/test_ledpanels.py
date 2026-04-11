@@ -13,8 +13,16 @@ from kinefly.plugins.ledpanels import LedPanelsPlugin
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _make_state(left_major=0.0, right_major=0.0, head_angle=0.0, head_radius=0.0,
-                abdomen_angle=0.0, abdomen_radius=0.0, aux_intensity=0.0):
+
+def _make_state(
+    left_major=0.0,
+    right_major=0.0,
+    head_angle=0.0,
+    head_radius=0.0,
+    abdomen_angle=0.0,
+    abdomen_radius=0.0,
+    aux_intensity=0.0,
+):
     return FlyState(
         timestamp=0.0,
         seq=0,
@@ -30,6 +38,7 @@ def _make_state(left_major=0.0, right_major=0.0, head_angle=0.0, head_radius=0.0
 # 1. Subclass check
 # ---------------------------------------------------------------------------
 
+
 def test_ledpanels_is_output_plugin():
     assert issubclass(LedPanelsPlugin, OutputPlugin)
 
@@ -37,6 +46,7 @@ def test_ledpanels_is_output_plugin():
 # ---------------------------------------------------------------------------
 # 2–5. bytes_from_command
 # ---------------------------------------------------------------------------
+
 
 def test_bytes_from_command_no_args():
     """'start' command: id=0x20, no args → [0x01, 0x20]."""
@@ -76,6 +86,7 @@ def test_bytes_from_command_send_gain_bias():
 # 6. compute_position
 # ---------------------------------------------------------------------------
 
+
 def test_compute_position_default_coeffs():
     """Default coeffs: x = left_major - right_major, y = 0.
 
@@ -100,6 +111,7 @@ def test_compute_position_large_values():
 # ---------------------------------------------------------------------------
 # 7. compute_velocity
 # ---------------------------------------------------------------------------
+
 
 def test_compute_velocity_default_coeffs():
     """Default coeffs, left=0.3, right=0.1 → vel[0]=0.2 → gain_x=0, bias_x=0, gain_y=0, bias_y=0."""
@@ -129,6 +141,7 @@ def test_compute_velocity_nonzero():
 # 8. on_flystate puts bytes in queue
 # ---------------------------------------------------------------------------
 
+
 def test_on_flystate_puts_bytes_in_queue():
     """After start with mock serial, on_flystate should enqueue bytes."""
     plugin = LedPanelsPlugin()
@@ -149,6 +162,7 @@ def test_on_flystate_puts_bytes_in_queue():
 # 9. stop closes serial
 # ---------------------------------------------------------------------------
 
+
 def test_stop_closes_serial():
     """stop() should close the serial port."""
     plugin = LedPanelsPlugin()
@@ -165,25 +179,26 @@ def test_stop_closes_serial():
 # 10. voltage method sends init command
 # ---------------------------------------------------------------------------
 
+
 def test_voltage_method_sends_init_command():
     """start() with method='voltage' should write set_mode_vel_custom_x bytes to serial."""
     plugin = LedPanelsPlugin()
     mock_serial = MagicMock()
 
     with patch("serial.Serial", return_value=mock_serial):
-        plugin.start({
-            "port": "/dev/ttyUSB0",
-            "method": "voltage",
-            "mode": "velocity",
-            "axis": "x",
-        })
+        plugin.start(
+            {
+                "port": "/dev/ttyUSB0",
+                "method": "voltage",
+                "mode": "velocity",
+                "axis": "x",
+            }
+        )
         plugin.stop()
 
     # Build expected bytes for set_mode_vel_custom_x with default coefficients
     # adc0=1, adc1=0, adc2=0, adc3=0, funcx=0, funcy=0
-    expected_bytes = plugin.bytes_from_command(
-        "set_mode_vel_custom_x", [1, 0, 0, 0, 0, 0]
-    )
+    expected_bytes = plugin.bytes_from_command("set_mode_vel_custom_x", [1, 0, 0, 0, 0, 0])
 
     # Collect all write call args
     written = [call.args[0] for call in mock_serial.write.call_args_list]
@@ -198,18 +213,25 @@ def test_voltage_method_custom_coefficients():
     mock_serial = MagicMock()
 
     with patch("serial.Serial", return_value=mock_serial):
-        plugin.start({
-            "port": "/dev/ttyUSB0",
-            "method": "voltage",
-            "mode": "position",
-            "axis": "y",
-            "coeff_voltage": {"adc0": 2, "adc1": 3, "adc2": 0, "adc3": 0, "funcx": 1, "funcy": 0},
-        })
+        plugin.start(
+            {
+                "port": "/dev/ttyUSB0",
+                "method": "voltage",
+                "mode": "position",
+                "axis": "y",
+                "coeff_voltage": {
+                    "adc0": 2,
+                    "adc1": 3,
+                    "adc2": 0,
+                    "adc3": 0,
+                    "funcx": 1,
+                    "funcy": 0,
+                },
+            }
+        )
         plugin.stop()
 
-    expected_bytes = plugin.bytes_from_command(
-        "set_mode_pos_custom_y", [2, 3, 0, 0, 1, 0]
-    )
+    expected_bytes = plugin.bytes_from_command("set_mode_pos_custom_y", [2, 3, 0, 0, 1, 0])
     written = [call.args[0] for call in mock_serial.write.call_args_list]
     assert expected_bytes in written, (
         f"Expected {expected_bytes!r} to be written to serial; got {written!r}"

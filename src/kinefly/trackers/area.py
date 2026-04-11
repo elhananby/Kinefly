@@ -144,18 +144,12 @@ class AreaTracker(MotionTrackedBodypartPolar):
             )
             radiusOffset = rShift
             self.state.angles = [(self.stateOrigin_p.angles[0] + angleOffset)]
-            self.state.angles = [
-                ((self.state.angles[0] + np.pi) % (2 * np.pi)) - np.pi
-            ]
+            self.state.angles = [((self.state.angles[0] + np.pi) % (2 * np.pi)) - np.pi]
             self.state.radii = [self.stateOrigin_p.radii[0] + radiusOffset]
 
             # Get min,max's
-            self.stateLo_p.angles = [
-                min(self.stateLo_p.angles[0], self.state.angles[0])
-            ]
-            self.stateHi_p.angles = [
-                max(self.stateHi_p.angles[0], self.state.angles[0])
-            ]
+            self.stateLo_p.angles = [min(self.stateLo_p.angles[0], self.state.angles[0])]
+            self.stateHi_p.angles = [max(self.stateHi_p.angles[0], self.state.angles[0])]
             self.stateLo_p.radii = [min(self.stateLo_p.radii[0], self.state.radii[0])]
             self.stateHi_p.radii = [max(self.stateHi_p.radii[0], self.state.radii[0])]
 
@@ -164,13 +158,9 @@ class AreaTracker(MotionTrackedBodypartPolar):
             # take that image as the new origin image. Thus driving the origin image
             # toward the midpoint image over time.
             if (self.params[self.name]["autozero"]) and (self.iCount > 100):
-                angleRef_p = (
-                    self.stateHi_p.angles[0] + self.stateLo_p.angles[0]
-                ) / 2.0
+                angleRef_p = (self.stateHi_p.angles[0] + self.stateLo_p.angles[0]) / 2.0
 
-                if (
-                    angleRef_p < self.state.angles[0] < self.stateOrigin_p.angles[0]
-                ) or (
+                if (angleRef_p < self.state.angles[0] < self.stateOrigin_p.angles[0]) or (
                     self.stateOrigin_p.angles[0] < self.state.angles[0] < angleRef_p
                 ):
                     self.imgComparison = imgNow
@@ -190,9 +180,7 @@ class AreaTracker(MotionTrackedBodypartPolar):
                 size = (self.image.shape[1], self.image.shape[0])
 
                 # Stabilize the rotation.
-                T = cv2.getRotationMatrix2D(
-                    center, np.rad2deg(self.state.angles[0]), 1.0
-                )
+                T = cv2.getRotationMatrix2D(center, np.rad2deg(self.state.angles[0]), 1.0)
 
                 # Stabilize the expansion.
                 T[0, 2] -= rShift * self.cosAngleBody_i
@@ -202,9 +190,7 @@ class AreaTracker(MotionTrackedBodypartPolar):
                 self.windowStabilized.set_image(self.imgStabilized)
 
         if self.imgRoiFgMasked is not None:
-            self.state.intensity = float(
-                np.sum(self.imgRoiFgMasked) / self.mask.sum
-            )
+            self.state.intensity = float(np.sum(self.imgRoiFgMasked) / self.mask.sum)
         else:
             self.state.intensity = 0.0
 
@@ -238,12 +224,8 @@ class AreaTracker(MotionTrackedBodypartPolar):
             )
             ptState_i = imaging.clip_pt(
                 (
-                    int(
-                        pt[0] + self.params["gui"][self.name]["hinge"]["x"]
-                    ),
-                    int(
-                        pt[1] + self.params["gui"][self.name]["hinge"]["y"]
-                    ),
+                    int(pt[0] + self.params["gui"][self.name]["hinge"]["x"]),
+                    int(pt[1] + self.params["gui"][self.name]["hinge"]["y"]),
                 ),
                 image.shape,
             )
@@ -261,12 +243,8 @@ class AreaTracker(MotionTrackedBodypartPolar):
                 )
                 ptStateLo_i = imaging.clip_pt(
                     (
-                        int(
-                            pt[0] + self.params["gui"][self.name]["hinge"]["x"]
-                        ),
-                        int(
-                            pt[1] + self.params["gui"][self.name]["hinge"]["y"]
-                        ),
+                        int(pt[0] + self.params["gui"][self.name]["hinge"]["x"]),
+                        int(pt[1] + self.params["gui"][self.name]["hinge"]["y"]),
                     ),
                     image.shape,
                 )
@@ -280,12 +258,8 @@ class AreaTracker(MotionTrackedBodypartPolar):
                 )
                 ptStateHi_i = imaging.clip_pt(
                     (
-                        int(
-                            pt[0] + self.params["gui"][self.name]["hinge"]["x"]
-                        ),
-                        int(
-                            pt[1] + self.params["gui"][self.name]["hinge"]["y"]
-                        ),
+                        int(pt[0] + self.params["gui"][self.name]["hinge"]["x"]),
+                        int(pt[1] + self.params["gui"][self.name]["hinge"]["y"]),
                     ),
                     image.shape,
                 )

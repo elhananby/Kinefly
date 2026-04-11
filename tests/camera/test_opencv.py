@@ -1,6 +1,3 @@
-import numpy as np
-import pytest
-
 from kinefly.camera.base import CameraSource
 from kinefly.camera.opencv import OpenCVCamera
 

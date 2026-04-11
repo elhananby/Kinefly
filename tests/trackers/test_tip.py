@@ -1,7 +1,7 @@
 import numpy as np
 
-from kinefly.trackers.tip import TipDetector, TipTracker
 from kinefly.core.types import BodyPartState
+from kinefly.trackers.tip import TipDetector, TipTracker
 
 
 def test_tip_detector_init():

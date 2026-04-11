@@ -95,12 +95,8 @@ class MotionTrackedBodypart:
         self.sinAngleBody_i = np.sin(self.angleBody_i)
 
         gui = self.params["gui"]
-        self.ptHinge_i = np.array(
-            [gui[self.name]["hinge"]["x"], gui[self.name]["hinge"]["y"]]
-        )
-        self.ptHingeHead_i = np.array(
-            [gui["head"]["hinge"]["x"], gui["head"]["hinge"]["y"]]
-        )
+        self.ptHinge_i = np.array([gui[self.name]["hinge"]["x"], gui[self.name]["hinge"]["y"]])
+        self.ptHingeHead_i = np.array([gui["head"]["hinge"]["x"], gui["head"]["hinge"]["y"]])
         self.ptHingeAbdomen_i = np.array(
             [gui["abdomen"]["hinge"]["x"], gui["abdomen"]["hinge"]["y"]]
         )
@@ -366,20 +362,36 @@ class MotionTrackedBodypart:
 
         pt = np.array([x, y])
         self.ptWedgeHi_outer = tuple(
-            (pt + np.array([radius_outer * np.cos(self.angle_hi_i),
-                            radius_outer * np.sin(self.angle_hi_i)])).astype(int)
+            (
+                pt
+                + np.array(
+                    [radius_outer * np.cos(self.angle_hi_i), radius_outer * np.sin(self.angle_hi_i)]
+                )
+            ).astype(int)
         )
         self.ptWedgeHi_inner = tuple(
-            (pt + np.array([radius_inner * np.cos(self.angle_hi_i),
-                            radius_inner * np.sin(self.angle_hi_i)])).astype(int)
+            (
+                pt
+                + np.array(
+                    [radius_inner * np.cos(self.angle_hi_i), radius_inner * np.sin(self.angle_hi_i)]
+                )
+            ).astype(int)
         )
         self.ptWedgeLo_outer = tuple(
-            (pt + np.array([radius_outer * np.cos(self.angle_lo_i),
-                            radius_outer * np.sin(self.angle_lo_i)])).astype(int)
+            (
+                pt
+                + np.array(
+                    [radius_outer * np.cos(self.angle_lo_i), radius_outer * np.sin(self.angle_lo_i)]
+                )
+            ).astype(int)
         )
         self.ptWedgeLo_inner = tuple(
-            (pt + np.array([radius_inner * np.cos(self.angle_lo_i),
-                            radius_inner * np.sin(self.angle_lo_i)])).astype(int)
+            (
+                pt
+                + np.array(
+                    [radius_inner * np.cos(self.angle_lo_i), radius_inner * np.sin(self.angle_lo_i)]
+                )
+            ).astype(int)
         )
 
     # update()

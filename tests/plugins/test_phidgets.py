@@ -20,10 +20,10 @@ def test_voltages_from_flystate():
     )
     voltages = plugin.voltages_from_flystate(state)
     assert len(voltages) == 4
-    np.testing.assert_allclose(voltages[0], 1.0, atol=1e-6)   # L
-    np.testing.assert_allclose(voltages[1], 0.5, atol=1e-6)   # R
-    np.testing.assert_allclose(voltages[2], 0.5, atol=1e-6)   # L-R
-    np.testing.assert_allclose(voltages[3], 1.5, atol=1e-6)   # L+R
+    np.testing.assert_allclose(voltages[0], 1.0, atol=1e-6)  # L
+    np.testing.assert_allclose(voltages[1], 0.5, atol=1e-6)  # R
+    np.testing.assert_allclose(voltages[2], 0.5, atol=1e-6)  # L-R
+    np.testing.assert_allclose(voltages[3], 1.5, atol=1e-6)  # L+R
 
 
 def test_voltages_clipped_to_range():

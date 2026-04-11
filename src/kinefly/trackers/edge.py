@@ -76,9 +76,7 @@ class EdgeDetectorByIntensityProfile:
         iCount = 0
 
         # While there are edges to detect, put them in lists in order of decending strength.
-        while ((0.0 < np.max(diffP)) or (0.0 < np.max(diffN))) and (
-            iCount < nCount
-        ):
+        while ((0.0 < np.max(diffP)) or (0.0 < np.max(diffN))) and (iCount < nCount):
             # If there's an edge in this diff.
             if 0.0 < np.max(diff_list[q]):
                 # Append the strongest edge to the list of edges.
@@ -251,9 +249,7 @@ class EdgeTrackerByIntensityProfile(MotionTrackedBodypartPolar):
         else:
             self.sense = 1
 
-        self.detector.set_params(
-            params[self.name]["threshold"], params["n_edges_max"], self.sense
-        )
+        self.detector.set_params(params[self.name]["threshold"], params["n_edges_max"], self.sense)
 
     # update_state()
     #
@@ -277,12 +273,8 @@ class EdgeTrackerByIntensityProfile(MotionTrackedBodypartPolar):
             for i in range(len(edges)):
                 edge = edges[i]
                 gradient = gradients[i]
-                angle_b = (
-                    self.params["gui"][self.name]["angle_lo"] + edge * anglePerPixel
-                )
-                angle_p = (
-                    self.transform_angle_p_from_b(angle_b) + np.pi
-                ) % (2 * np.pi) - np.pi
+                angle_b = self.params["gui"][self.name]["angle_lo"] + edge * anglePerPixel
+                angle_p = (self.transform_angle_p_from_b(angle_b) + np.pi) % (2 * np.pi) - np.pi
                 self.state.angles.append(angle_p)
                 self.state.gradients.append(gradient)
 
@@ -310,21 +302,17 @@ class EdgeTrackerByIntensityProfile(MotionTrackedBodypartPolar):
                 angle_b = self.transform_angle_b_from_p(self.state.angles[i])
                 angle_i = self.transform_angle_i_from_b(angle_b)
 
-                x0 = (
-                    self.ptHinge_i[0]
-                    + self.params["gui"][self.name]["radius_inner"] * np.cos(angle_i)
+                x0 = self.ptHinge_i[0] + self.params["gui"][self.name]["radius_inner"] * np.cos(
+                    angle_i
                 )
-                y0 = (
-                    self.ptHinge_i[1]
-                    + self.params["gui"][self.name]["radius_inner"] * np.sin(angle_i)
+                y0 = self.ptHinge_i[1] + self.params["gui"][self.name]["radius_inner"] * np.sin(
+                    angle_i
                 )
-                x1 = (
-                    self.ptHinge_i[0]
-                    + self.params["gui"][self.name]["radius_outer"] * np.cos(angle_i)
+                x1 = self.ptHinge_i[0] + self.params["gui"][self.name]["radius_outer"] * np.cos(
+                    angle_i
                 )
-                y1 = (
-                    self.ptHinge_i[1]
-                    + self.params["gui"][self.name]["radius_outer"] * np.sin(angle_i)
+                y1 = self.ptHinge_i[1] + self.params["gui"][self.name]["radius_outer"] * np.sin(
+                    angle_i
                 )
                 cv2.line(image, (int(x0), int(y0)), (int(x1), int(y1)), bgra, 1)
                 bgra = tuple(0.5 * np.array(bgra))
@@ -335,12 +323,8 @@ class EdgeTrackerByIntensityProfile(MotionTrackedBodypartPolar):
         """Return diagnostic data for plotting tools."""
         abscissa = list(
             np.linspace(
-                self.params.get("gui", {})
-                .get(self.name, {})
-                .get("angle_lo", 0.0),
-                self.params.get("gui", {})
-                .get(self.name, {})
-                .get("angle_hi", 1.0),
+                self.params.get("gui", {}).get(self.name, {}).get("angle_lo", 0.0),
+                self.params.get("gui", {}).get(self.name, {}).get("angle_hi", 1.0),
                 max(1, len(self.detector.intensities)),
             )
         )

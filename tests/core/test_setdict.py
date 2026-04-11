@@ -1,4 +1,4 @@
-from kinefly.core.setdict import set_dict_with_preserve, set_dict_with_overwrite
+from kinefly.core.setdict import set_dict_with_overwrite, set_dict_with_preserve
 
 
 def test_preserve_keeps_existing_keys():
