@@ -119,6 +119,10 @@ _DEFAULT_COEFF_USB: dict[str, float] = {
     "yha": 0.0, "yhr": 0.0, "yaa": 0.0, "yar": 0.0, "yxi": 0.0,
 }
 
+_DEFAULT_COEFF_VOLTAGE: dict[str, int] = {
+    "adc0": 1, "adc1": 0, "adc2": 0, "adc3": 0, "funcx": 0, "funcy": 0,
+}
+
 
 def _dec2bytes(num: int, n: int) -> bytes:
     """Convert integer to n bytes, LSB first (little-endian).
@@ -155,6 +159,7 @@ class LedPanelsPlugin(OutputPlugin):
         self._baudrate: int = 115200
         self._method: str = "usb"
         self._mode: str = "velocity"
+        self._axis: str = "x"
         self._pattern_id: int = 1
         self._coeff_usb: dict[str, float] = dict(_DEFAULT_COEFF_USB)
         # Build coefficient matrix (2x10)
@@ -175,6 +180,7 @@ class LedPanelsPlugin(OutputPlugin):
         self._baudrate = int(config.get("baudrate", self._baudrate))
         self._method = config.get("method", self._method)
         self._mode = config.get("mode", self._mode)
+        self._axis = config.get("axis", self._axis)
         self._pattern_id = int(config.get("pattern_id", self._pattern_id))
 
         coeff_usb = config.get("coeff_usb", {})
@@ -200,6 +206,27 @@ class LedPanelsPlugin(OutputPlugin):
                 self._serial.write(self.bytes_from_command("start", []))
             except Exception:
                 logger.warning("Failed to send init commands to LED panels")
+
+        # Voltage method: send ADC coefficient initialization command
+        if self._serial is not None and self._method == "voltage":
+            try:
+                coeff_voltage = dict(_DEFAULT_COEFF_VOLTAGE)
+                coeff_voltage.update(config.get("coeff_voltage", {}))
+                mode_part = "vel" if self._mode == "velocity" else "pos"
+                axis_part = self._axis if self._axis in ("x", "y") else "x"
+                cmd = f"set_mode_{mode_part}_custom_{axis_part}"
+                args = [
+                    coeff_voltage["adc0"],
+                    coeff_voltage["adc1"],
+                    coeff_voltage["adc2"],
+                    coeff_voltage["adc3"],
+                    coeff_voltage["funcx"],
+                    coeff_voltage["funcy"],
+                ]
+                self._serial.write(self.bytes_from_command(cmd, args))
+                logger.info("LED panels voltage init sent: %s %s", cmd, args)
+            except Exception:
+                logger.warning("Failed to send voltage init command to LED panels")
 
         self._thread = threading.Thread(target=self._writer_thread, daemon=True)
         self._thread.start()

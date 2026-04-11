@@ -159,3 +159,58 @@ def test_stop_closes_serial():
         plugin.stop()
 
     mock_serial.close.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# 10. voltage method sends init command
+# ---------------------------------------------------------------------------
+
+def test_voltage_method_sends_init_command():
+    """start() with method='voltage' should write set_mode_vel_custom_x bytes to serial."""
+    plugin = LedPanelsPlugin()
+    mock_serial = MagicMock()
+
+    with patch("serial.Serial", return_value=mock_serial):
+        plugin.start({
+            "port": "/dev/ttyUSB0",
+            "method": "voltage",
+            "mode": "velocity",
+            "axis": "x",
+        })
+        plugin.stop()
+
+    # Build expected bytes for set_mode_vel_custom_x with default coefficients
+    # adc0=1, adc1=0, adc2=0, adc3=0, funcx=0, funcy=0
+    expected_bytes = plugin.bytes_from_command(
+        "set_mode_vel_custom_x", [1, 0, 0, 0, 0, 0]
+    )
+
+    # Collect all write call args
+    written = [call.args[0] for call in mock_serial.write.call_args_list]
+    assert expected_bytes in written, (
+        f"Expected {expected_bytes!r} to be written to serial; got {written!r}"
+    )
+
+
+def test_voltage_method_custom_coefficients():
+    """start() with method='voltage' and custom coeff_voltage uses those values."""
+    plugin = LedPanelsPlugin()
+    mock_serial = MagicMock()
+
+    with patch("serial.Serial", return_value=mock_serial):
+        plugin.start({
+            "port": "/dev/ttyUSB0",
+            "method": "voltage",
+            "mode": "position",
+            "axis": "y",
+            "coeff_voltage": {"adc0": 2, "adc1": 3, "adc2": 0, "adc3": 0, "funcx": 1, "funcy": 0},
+        })
+        plugin.stop()
+
+    expected_bytes = plugin.bytes_from_command(
+        "set_mode_pos_custom_y", [2, 3, 0, 0, 1, 0]
+    )
+    written = [call.args[0] for call in mock_serial.write.call_args_list]
+    assert expected_bytes in written, (
+        f"Expected {expected_bytes!r} to be written to serial; got {written!r}"
+    )
