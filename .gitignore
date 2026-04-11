@@ -1,8 +1,62 @@
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+wheels/
+sdist/
+MANIFEST
+
+# uv / pip
+.venv/
+.uv/
+pip-wheel-metadata/
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.lcov
+
+# ruff
+.ruff_cache/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Editors
+.idea/
+.vscode/
+*.swp
 *~
-bin
-build
-*_gen
-*src
-!/src
-.venv
+*.orig
+*.bak
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Kinefly runtime files
+kinefly.yaml
+kinefly.png
+
+# Video / image output
+*.mp4
+*.avi
+*.mkv
+*.bag
+
+# Secrets / local config
+.env
+.env.*
