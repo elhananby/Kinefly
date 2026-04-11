@@ -55,15 +55,28 @@ _PHIDGETS_TOP_KEYS = frozenset(["autorange", "serial"])
 _LEDPANELS_TOP_KEYS = frozenset(["axis", "method", "mode", "pattern_id"])
 
 
-def parse_launch_file(path: Path) -> dict[str, tuple[str, str]]:
-    """Parse a .launch XML file and return flat {name: (type, value)} dict."""
+def parse_launch_file(path: Path) -> tuple[dict[str, tuple[str, str]], list[str]]:
+    """Parse a .launch XML file and return (flat {name: (type, value)} dict, warnings)."""
     params: dict[str, tuple[str, str]] = {}
+    file_warnings: list[str] = []
     try:
         tree = ET.parse(path)
     except ET.ParseError as exc:
         raise ValueError(f"Cannot parse {path}: {exc}") from exc
 
     root = tree.getroot()
+
+    # Scan for conditional attributes (if= / unless=)
+    for elem in root.iter():
+        if elem.get("if") is not None or elem.get("unless") is not None:
+            attr = "if" if elem.get("if") is not None else "unless"
+            val = elem.get(attr)
+            tag = elem.get("name") or elem.tag
+            file_warnings.append(
+                f"Element '{tag}' in {path.name} has conditional attribute"
+                f" '{attr}=\"{val}\"' — output may vary at runtime"
+            )
+
     for elem in root.iter("param"):
         name = elem.get("name", "").strip()
         value = elem.get("value", "")
@@ -71,7 +84,36 @@ def parse_launch_file(path: Path) -> dict[str, tuple[str, str]]:
         if name:
             params[name] = (type_hint, value)
 
-    return params
+    for elem in root.iter("rosparam"):
+        param_name = elem.get("param", "").strip()
+        if not param_name:
+            continue
+        text = elem.text
+        if not text or not text.strip():
+            file_warnings.append(
+                f"<rosparam param=\"{param_name}\"> in {path.name} has empty text — skipping"
+            )
+            continue
+        try:
+            parsed = yaml.safe_load(text)
+        except yaml.YAMLError as exc:
+            file_warnings.append(
+                f"<rosparam param=\"{param_name}\"> in {path.name}"
+                f" failed YAML parse: {exc} — skipping"
+            )
+            continue
+        if parsed is None:
+            file_warnings.append(
+                f"<rosparam param=\"{param_name}\"> in {path.name} parsed as None — skipping"
+            )
+            continue
+        if isinstance(parsed, dict):
+            for k, v in parsed.items():
+                params[f"{param_name}/{k}"] = ("rosparam", str(v))
+        else:
+            params[param_name] = ("rosparam", str(parsed))
+
+    return params, file_warnings
 
 
 def coerce_value(value: str, type_hint: str | None) -> object:
@@ -205,10 +247,27 @@ def convert_rig_dir(launch_dir: Path) -> tuple[dict, list[str]]:
     ]
 
     all_params: dict[str, tuple[str | None, str]] = {}
+    files_parsed = 0
     for fname in launch_files:
         fpath = launch_dir / fname
         if fpath.exists():
-            all_params.update(parse_launch_file(fpath))
+            file_params, file_warnings = parse_launch_file(fpath)
+            all_params.update(file_params)
+            warnings.extend(file_warnings)
+            files_parsed += 1
+
+    if files_parsed == 0:
+        found_variants = sorted(launch_dir.glob("params_*.launch"))
+        extra = (
+            f" Found: {', '.join(p.name for p in found_variants)}."
+            if found_variants
+            else ""
+        )
+        warnings.append(
+            f"No recognized launch files found in {launch_dir}. "
+            "Expected params_kinefly.launch, params_camera.launch, etc. "
+            f"Numbered variants (e.g. params_kinefly_1.launch) are not supported.{extra}"
+        )
 
     for name, (type_hint, raw_value) in all_params.items():
         # 1. Skip ROS-specific params

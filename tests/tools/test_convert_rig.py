@@ -40,10 +40,11 @@ def test_parse_launch_file(tmp_path):
             <param name="head/tracker" type="string" value="area" />
         </launch>
     """))
-    params = parse_launch_file(launch)
+    params, file_warnings = parse_launch_file(launch)
     assert params["n_edges_max"] == ("int", "1")
     assert params["rc_background"] == ("double", "100000")
     assert params["head/tracker"] == ("string", "area")
+    assert file_warnings == []
 
 
 def test_set_nested():
@@ -193,3 +194,52 @@ def test_phidgets_multiple_channels(tmp_path):
     assert len(channels) == 2
     assert channels[0]["coefficients"]["l1"] == pytest.approx(5.0)
     assert channels[1]["coefficients"]["r1"] == pytest.approx(5.0)
+
+
+def test_parse_launch_file_with_rosparam(tmp_path):
+    """<rosparam> blocks with dict and scalar payloads are parsed correctly."""
+    launch = tmp_path / "test_rosparam.launch"
+    launch.write_text(textwrap.dedent("""
+        <launch>
+            <rosparam param="head">
+              tracker: area
+              threshold: 0.5
+            </rosparam>
+            <rosparam param="scale_image">2</rosparam>
+        </launch>
+    """))
+    params, file_warnings = parse_launch_file(launch)
+    # Dict rosparam is flattened
+    assert params["head/tracker"] == ("rosparam", "area")
+    assert params["head/threshold"] == ("rosparam", "0.5")
+    # Scalar rosparam
+    assert params["scale_image"] == ("rosparam", "2")
+    assert file_warnings == []
+
+
+def test_convert_rig_dir_warns_on_empty(tmp_path):
+    """A dir with only a numbered variant (not a standard name) triggers a warning."""
+    launch = tmp_path / "params_kinefly_1.launch"
+    launch.write_text(textwrap.dedent("""
+        <launch>
+            <param name="n_edges_max" type="int" value="1" />
+        </launch>
+    """))
+    config, warnings = convert_rig_dir(tmp_path)
+    assert any("No recognized launch files" in w for w in warnings)
+    # The variant filename should be mentioned
+    assert any("params_kinefly_1.launch" in w for w in warnings)
+
+
+def test_conditional_block_generates_warning(tmp_path):
+    """Params with if= or unless= attributes generate a warning."""
+    launch = tmp_path / "params_kinefly.launch"
+    launch.write_text(textwrap.dedent("""
+        <launch>
+            <param name="foo" type="string" value="bar" if="$(arg some_arg)" />
+        </launch>
+    """))
+    params, file_warnings = parse_launch_file(launch)
+    assert any("conditional" in w.lower() or "if" in w for w in file_warnings)
+    # The param is still parsed despite the conditional
+    assert "foo" in params
