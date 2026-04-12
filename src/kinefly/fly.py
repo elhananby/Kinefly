@@ -362,6 +362,8 @@ class Fly:
         )
 
     def draw(self, image):
+        if not self.params:
+            return  # null-tracker mode — nothing to draw yet
         # Draw line to indicate the body axis.
         if self.ptBodyIndicator1 is not None and self.ptBodyIndicator2 is not None:
             cv2.line(image, self.ptBodyIndicator1, self.ptBodyIndicator2, self.bgra_body, 1)
