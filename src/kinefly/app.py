@@ -188,24 +188,49 @@ class KineflyApp:
             return
         tracker, name = self._dragging
         handle = tracker.handles[name]
-        ipt = np.array([x, y], dtype=int)
-        handle.pt = ipt
-        # Propagate to params so set_params() can re-derive mask geometry
-        _set_nested(
-            self._fly.params,
-            ["gui", tracker.name, name, "x"],
-            int(x),
-        )
-        _set_nested(
-            self._fly.params,
-            ["gui", tracker.name, name, "y"],
-            int(y),
-        )
+        handle.pt = np.array([x, y], dtype=int)
+        self._write_handle_to_params(tracker, name, x, y)
         try:
             tracker.set_params(self._fly.params)
         except Exception:
             pass  # params may be incomplete until all handles are placed
         tracker.bValidMask = False
+
+    def _write_handle_to_params(self, tracker, handle_name: str, x: float, y: float) -> None:
+        """Convert a dragged handle's image position back to the appropriate param value."""
+        params = self._fly.params
+        gui = params.get("gui", {})
+        part = tracker.name
+
+        # Position handles — stored as {"x": int, "y": int}
+        if handle_name in ("hinge", "center", "pt1", "pt2"):
+            _set_nested(params, ["gui", part, handle_name, "x"], int(x))
+            _set_nested(params, ["gui", part, handle_name, "y"], int(y))
+            return
+
+        # Angle handles — stored as a body-frame angle (radians, float)
+        if handle_name in ("angle_hi", "angle_lo"):
+            hinge = gui.get(part, {}).get("hinge", {"x": 0, "y": 0})
+            angle_i = float(np.arctan2(y - hinge["y"], x - hinge["x"]))
+            angle_b = tracker.transform_angle_b_from_i(angle_i)
+            params["gui"][part][handle_name] = float(angle_b)
+            return
+
+        # radius_inner — stored as pixel distance from hinge (float)
+        if handle_name == "radius_inner":
+            hinge = gui.get(part, {}).get("hinge", {"x": 0, "y": 0})
+            params["gui"][part]["radius_inner"] = float(
+                np.linalg.norm([x - hinge["x"], y - hinge["y"]])
+            )
+            return
+
+        # Intensity tracker radii — stored as pixel distance from center (float)
+        if handle_name in ("radius1", "radius2"):
+            center = gui.get(part, {}).get("center", {"x": 0, "y": 0})
+            params["gui"][part][handle_name] = float(
+                np.linalg.norm([x - center["x"], y - center["y"]])
+            )
+            return
 
     def _on_mouse_released(self, x: float, y: float) -> None:
         if self._dragging is not None:
