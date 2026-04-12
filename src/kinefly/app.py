@@ -217,6 +217,10 @@ class KineflyApp:
     # ------------------------------------------------------------------
 
     def _on_track_toggled(self, part: str, enabled: bool) -> None:
+        # In null-tracker mode (no hinge positions set yet) there is nothing
+        # to enable — ignore until the user has placed handles.
+        if not self._fly.params:
+            return
         _set_nested(self._fly.params, ["gui", part, "track"], enabled)
         self._save_gui_state()
 

@@ -118,6 +118,8 @@ class AxisTracker:
     # Draw the outline.
     #
     def draw(self, image):
+        if not self.params or "gui" not in self.params:
+            return
         if self.params["gui"][self.name]["track"]:
             # Draw line to indicate the body axis.
             cv2.line(
