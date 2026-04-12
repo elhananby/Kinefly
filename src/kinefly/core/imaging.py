@@ -1,14 +1,10 @@
 """Image processing utilities: polar transforms, phase correlation, window functions.
 
-Ported from nodes/imageprocessing.py with minimal changes:
-- Removed rospy and cv (old OpenCV) imports
-- Fixed Python 2 tuple unpacking in function signatures
-- All algorithms are preserved exactly as-is
+Ported from nodes/imageprocessing.py. Algorithms are preserved exactly;
+inner Python loops replaced with NumPy vectorised equivalents where possible.
 """
 
 from __future__ import annotations
-
-import copy
 
 import cv2
 import numpy as np
@@ -27,49 +23,29 @@ def get_angle_from_points_i(pt1: np.ndarray, pt2: np.ndarray) -> float:
 def get_intersection(
     pt1a: np.ndarray, pt1b: np.ndarray, pt2a: np.ndarray, pt2b: np.ndarray
 ) -> np.ndarray:
-    """Intersection of two lines, given two points on each line."""
-    x1, y1 = pt1a[0], pt1a[1]
-    x2, y2 = pt1b[0], pt1b[1]
-    x3, y3 = pt2a[0], pt2a[1]
-    x4, y4 = pt2b[0], pt2b[1]
+    """Intersection of two lines, given two points on each line.
 
-    den = x1 * y3 - x3 * y1 - x1 * y4 - x2 * y3 + x3 * y2 + x4 * y1 + x2 * y4 - x4 * y2
-    if den != 0.0:
-        x = (
-            x1 * x3 * y2
-            - x2 * x3 * y1
-            - x1 * x4 * y2
-            + x2 * x4 * y1
-            - x1 * x3 * y4
-            + x1 * x4 * y3
-            + x2 * x3 * y4
-            - x2 * x4 * y3
-        ) / den
-        y = (
-            x1 * y2 * y3
-            - x2 * y1 * y3
-            - x1 * y2 * y4
-            + x2 * y1 * y4
-            - x3 * y1 * y4
-            + x4 * y1 * y3
-            + x3 * y2 * y4
-            - x4 * y2 * y3
-        ) / den
-    else:
-        x = x3
-        y = y3
+    Solves the 2×2 parametric system t*(p1b-p1a) - s*(p2b-p2a) = p2a-p1a.
+    Falls back to pt2a when the lines are parallel (singular system).
+    """
+    x1, y1 = float(pt1a[0]), float(pt1a[1])
+    x2, y2 = float(pt1b[0]), float(pt1b[1])
+    x3, y3 = float(pt2a[0]), float(pt2a[1])
+    x4, y4 = float(pt2b[0]), float(pt2b[1])
 
-    return np.array([x, y])
+    A = np.array([[x2 - x1, x3 - x4], [y2 - y1, y3 - y4]], dtype=np.float64)
+    b = np.array([x3 - x1, y3 - y1], dtype=np.float64)
+    try:
+        t, _ = np.linalg.solve(A, b)
+        return np.array([x1 + t * (x2 - x1), y1 + t * (y2 - y1)])
+    except np.linalg.LinAlgError:
+        return np.array([x3, y3])
 
 
 def get_projection_onto_axis(
     pt_anywhere: np.ndarray, pt_axis_base: np.ndarray, pt_axis_head: np.ndarray
 ) -> np.ndarray:
-    """Project the given point onto the axis defined by two points.
-
-    Note: Original signature used Python 2 tuple unpacking:
-        def get_projection_onto_axis(ptAnywhere, (ptAxisBase, ptAxisHead))
-    """
+    """Project the given point onto the axis defined by two points."""
     pt_b = pt_axis_head - pt_axis_base
     pt_m = pt_anywhere - pt_axis_base
     pt_axis = np.dot(pt_b, pt_m) / np.dot(pt_b, pt_b) * pt_b + pt_axis_base
@@ -79,11 +55,7 @@ def get_projection_onto_axis(
 def get_reflection_across_axis(
     pt_anywhere: np.ndarray, pt_axis_base: np.ndarray, pt_axis_head: np.ndarray
 ) -> np.ndarray:
-    """Reflect a point across the axis defined by two points.
-
-    Note: Original signature used Python 2 tuple unpacking:
-        def get_reflection_across_axis(ptAnywhere, (ptAxisBase, ptAxisHead))
-    """
+    """Reflect a point across the axis defined by two points."""
     pt_axis = get_projection_onto_axis(pt_anywhere, pt_axis_base, pt_axis_head)
     pt_reflected = pt_anywhere + 2 * (pt_axis - pt_anywhere)
     return pt_reflected
@@ -91,25 +63,32 @@ def get_reflection_across_axis(
 
 def filter_median(data: np.ndarray, q: int = 1) -> np.ndarray:
     """Median filter with window radius q. q=1 gives window of 3, q=2 gives window of 5."""
-    data2 = copy.copy(data)
-    for i in range(q, len(data) - q):
-        data2[i] = np.median(data[i - q : i + q + 1])
+    n = len(data)
+    data2 = data.copy()
 
+    # Filter interior elements when there are enough samples.
+    if n > 2 * q:
+        # sliding_window_view gives shape (n - 2q, 2q+1); median along axis=1.
+        windows = np.lib.stride_tricks.sliding_window_view(data, 2 * q + 1)
+        data2[q : n - q] = np.median(windows, axis=1)
+
+    # Edge-padding — always applied, matching the original's behaviour for
+    # short arrays where the loop produced no output.
     try:
-        data2[0:q] = data2[q]
-        data2[len(data2) - q : len(data2)] = data2[-(q + 1)]
+        data2[:q] = data2[q]
+        data2[n - q :] = data2[-(q + 1)]
         return data2
     except IndexError:
         return data
 
 
 def clip(x: float, lo: float, hi: float) -> float:
-    return max(min(x, hi), lo)
+    return float(np.clip(x, lo, hi))
 
 
 def clip_pt(pt: tuple[int, int], shape: tuple[int, ...]) -> tuple[int, int]:
     """Clip a point (x, y) to image shape (yMax+1, xMax+1)."""
-    return (int(clip(pt[0], 0, shape[1] - 1)), int(clip(pt[1], 0, shape[0] - 1)))
+    return (int(np.clip(pt[0], 0, shape[1] - 1)), int(np.clip(pt[1], 0, shape[0] - 1)))
 
 
 class PolarTransforms:
@@ -117,43 +96,38 @@ class PolarTransforms:
         self._transforms: dict = {}
 
     def _get_transform_polar_log(self, i_0, j_0, i_n, j_n, nRho, dRho, nTheta, theta_0, theta_1):
-        transform = self._transforms.get((i_0, j_0, i_n, j_n, nRho, nTheta, theta_0, theta_1))
+        key = (i_0, j_0, i_n, j_n, nRho, nTheta, theta_0, theta_1)
+        transform = self._transforms.get(key)
 
         if transform is None:
-            i_k = []
-            j_k = []
-            rho_k = []
-            theta_k = []
-
             aspect = float(i_n) / float(j_n)
             dTheta = (theta_1 - theta_0) / nTheta
-            for iRho in range(0, nRho):
-                rho = np.exp(iRho * dRho)
 
-                for iTheta in range(0, nTheta):
-                    theta = theta_0 + iTheta * dTheta
+            # Vectorised: build all (iRho, iTheta) pairs at once.
+            iRho_g, iTheta_g = np.meshgrid(
+                np.arange(nRho), np.arange(nTheta), indexing="ij"
+            )  # both shape (nRho, nTheta)
 
-                    i_c = rho * np.sin(theta)
-                    j_c = rho * np.cos(theta)
+            rho = np.exp(iRho_g * dRho)
+            theta = theta_0 + iTheta_g * dTheta
 
-                    if aspect >= 1.0:
-                        i = i_0 + int(i_c * aspect)
-                        j = j_0 + int(j_c)
-                    else:
-                        i = i_0 + int(i_c)
-                        j = j_0 + int(j_c / aspect)
+            i_c = rho * np.sin(theta)
+            j_c = rho * np.cos(theta)
 
-                    if (0 <= i < i_n) and (0 <= j < j_n):
-                        i_k.append(i)
-                        j_k.append(j)
-                        rho_k.append(iRho)
-                        theta_k.append(iTheta)
+            if aspect >= 1.0:
+                i = i_0 + (i_c * aspect).astype(np.intp)
+                j = j_0 + j_c.astype(np.intp)
+            else:
+                i = i_0 + i_c.astype(np.intp)
+                j = j_0 + (j_c / aspect).astype(np.intp)
+
+            valid = (i >= 0) & (i < i_n) & (j >= 0) & (j < j_n)
 
             transform = (
-                (np.array(rho_k), np.array(theta_k)),
-                (np.array(i_k), np.array(j_k)),
+                (iRho_g[valid], iTheta_g[valid]),
+                (i[valid], j[valid]),
             )
-            self._transforms[i_0, j_0, i_n, j_n, nRho, nTheta, theta_0, theta_1] = transform
+            self._transforms[key] = transform
 
         return transform
 
@@ -211,67 +185,60 @@ class PolarTransforms:
     ):
         (raxial, rortho) = r_axial_ortho
         nTheta = max(1, nTheta)
-        transform = self._transforms.get(
-            (i_0, j_0, i_n, j_n, nRho, drStrip, nTheta, theta_0, theta_1, rClip)
-        )
+        key = (i_0, j_0, i_n, j_n, nRho, drStrip, nTheta, theta_0, theta_1, rClip)
+        transform = self._transforms.get(key)
 
         if transform is None:
-            i_k = []
-            j_k = []
-            rho_k = []
-            theta_k = []
-
             raxial_outer = raxial + drStrip
             rortho_outer = raxial + drStrip
             raxial_inner = raxial - drStrip
             rortho_inner = raxial - drStrip
 
-            R = np.array(
-                [
-                    [np.cos(-angleEllipse), -np.sin(-angleEllipse)],
-                    [np.sin(-angleEllipse), np.cos(-angleEllipse)],
-                ]
-            )
+            ca = np.cos(-angleEllipse)
+            sa = np.sin(-angleEllipse)
+
             dTheta = (theta_1 - theta_0) / nTheta
+            nRho_clip = int(np.ceil(rClip * nRho))
 
-            for iTheta in range(0, nTheta):
-                theta = theta_0 + iTheta * dTheta
+            # Per-theta quantities — shape (nTheta,)
+            theta = theta_0 + np.arange(nTheta) * dTheta
+            xy_e_x = raxial * np.cos(theta)
+            xy_e_y = rortho * np.sin(theta)
+            theta_e = np.arctan2(xy_e_y, xy_e_x)
 
-                xy_e = np.array([raxial * np.cos(theta), rortho * np.sin(theta)])
-                theta_e = np.arctan2(xy_e[1], xy_e[0])
+            rho_e_inner = np.sqrt(
+                (raxial_inner * np.cos(theta)) ** 2 + (rortho_inner * np.sin(theta)) ** 2
+            )
+            rho_e_outer = np.sqrt(
+                (raxial_outer * np.cos(theta)) ** 2 + (rortho_outer * np.sin(theta)) ** 2
+            )
+            dRho_per_theta = (rho_e_outer - rho_e_inner) / nRho  # (nTheta,)
 
-                rho_e_inner = np.linalg.norm(
-                    [raxial_inner * np.cos(theta), rortho_inner * np.sin(theta)]
-                )
-                rho_e_outer = np.linalg.norm(
-                    [raxial_outer * np.cos(theta), rortho_outer * np.sin(theta)]
-                )
-                dRho = (rho_e_outer - rho_e_inner) / nRho
+            # 2-D grid: (nTheta, nRho_clip)
+            iTheta_g, iRho_g = np.meshgrid(
+                np.arange(nTheta), np.arange(nRho_clip), indexing="ij"
+            )
 
-                for iRho in range(0, int(np.ceil(rClip * nRho))):
-                    rho = rho_e_inner + iRho * dRho
+            rho = rho_e_inner[:, None] + iRho_g * dRho_per_theta[:, None]
+            te = theta_e[:, None] * np.ones(nRho_clip)
 
-                    i_e = rho * np.sin(theta_e)
-                    j_e = rho * np.cos(theta_e)
+            i_e = rho * np.sin(te)
+            j_e = rho * np.cos(te)
 
-                    ij = R.dot([i_e, j_e])
+            # Apply rotation matrix R = [[ca, -sa], [sa, ca]]
+            ij_0 = ca * i_e - sa * j_e
+            ij_1 = sa * i_e + ca * j_e
 
-                    i = int(i_0 + ij[0])
-                    j = int(j_0 + ij[1])
+            i = (i_0 + ij_0).astype(np.intp)
+            j = (j_0 + ij_1).astype(np.intp)
 
-                    if (0 <= i < i_n) and (0 <= j < j_n):
-                        i_k.append(i)
-                        j_k.append(j)
-                        rho_k.append(iRho)
-                        theta_k.append(iTheta)
+            valid = (i >= 0) & (i < i_n) & (j >= 0) & (j < j_n)
 
             transform = (
-                (np.array(rho_k), np.array(theta_k)),
-                (np.array(i_k), np.array(j_k)),
+                (iRho_g[valid], iTheta_g[valid]),
+                (i[valid], j[valid]),
             )
-            self._transforms[i_0, j_0, i_n, j_n, nRho, drStrip, nTheta, theta_0, theta_1, rClip] = (
-                transform
-            )
+            self._transforms[key] = transform
 
         return transform
 
@@ -385,10 +352,10 @@ class PhaseCorrelation:
 
                 w = 7
                 r = int((w - 1) / 2)
-                i0 = int(clip(iShift - r, 0, shift00.shape[0] - 1))
-                i1 = int(clip(iShift + r, 0, shift00.shape[0] - 1)) + 1
-                j0 = int(clip(jShift - r, 0, shift00.shape[1] - 1))
-                j1 = int(clip(jShift + r, 0, shift00.shape[1] - 1)) + 1
+                i0 = int(np.clip(iShift - r, 0, shift00.shape[0] - 1))
+                i1 = int(np.clip(iShift + r, 0, shift00.shape[0] - 1)) + 1
+                j0 = int(np.clip(jShift - r, 0, shift00.shape[1] - 1))
+                j1 = int(np.clip(jShift + r, 0, shift00.shape[1] - 1)) + 1
                 peak = shift00[i0:i1].T[j0:j1].T
                 moments = cv2.moments(peak, binaryImage=False)
 
@@ -412,6 +379,24 @@ class PhaseCorrelation:
         return rv
 
 
+def _tukey_1d(n: int, alpha: float) -> np.ndarray:
+    """1D Tukey (tapered cosine) window matching the original pixel-by-pixel formula."""
+    k = np.arange(n, dtype=np.float64)
+    w = np.ones(n, dtype=np.float64)
+
+    left_end = alpha * (n - 1) / 2.0
+    right_start = (n - 1) * (1.0 - alpha / 2.0)
+
+    left = k <= left_end
+    right = k > right_start
+
+    w[left] = 0.5 * (1.0 + np.cos(np.pi * (2.0 * k[left] / (alpha * (n - 1)) - 1.0)))
+    w[right] = 0.5 * (
+        1.0 + np.cos(np.pi * (2.0 * k[right] / (alpha * (n - 1)) - 2.0 / alpha + 1.0))
+    )
+    return w.astype(np.float32)
+
+
 class WindowFunctions:
     """Create 2D window functions for image processing."""
 
@@ -419,11 +404,7 @@ class WindowFunctions:
         (height, width) = shape
         wfn = np.ones(shape, dtype=np.float32)
         if height > 1 and width > 1:
-            for i in range(width):
-                for j in range(height):
-                    x = 2 * np.pi * i / (width - 1)
-                    y = 2 * np.pi * j / (height - 1)
-                    wfn[j][i] = 0.5 * (1 - np.cos(x)) * 0.5 * (1 - np.cos(y))
+            wfn = np.outer(np.hanning(height), np.hanning(width)).astype(np.float32)
         return wfn
 
     def create_tukey(self, shape: tuple[int, int], feathering: float = 0.25) -> np.ndarray:
@@ -431,25 +412,7 @@ class WindowFunctions:
         alpha = feathering if feathering > 0 else 0.25
         wfn = np.ones(shape, dtype=np.float32)
         if height > 1 and width > 1:
-            for i in range(width):
-                for j in range(height):
-                    y = np.pi * (2 * j / (alpha * (height - 1)) - 1)
-
-                    if 0 <= i <= (alpha * (width - 1)) / 2:
-                        x = np.pi * (2 * i / (alpha * (width - 1)) - 1)
-                    elif (alpha * (width - 1)) / 2 < i <= (width - 1) * (1 - alpha / 2):
-                        x = 0.0
-                    elif (width - 1) * (1 - alpha / 2) < i <= width - 1:
-                        x = np.pi * (2 * i / (alpha * (width - 1)) - 2 / alpha + 1)
-
-                    if 0 <= j <= (alpha * (height - 1)) / 2:
-                        y = np.pi * (2 * j / (alpha * (height - 1)) - 1)
-                    elif (alpha * (height - 1)) / 2 < j <= (height - 1) * (1 - alpha / 2):
-                        y = 0.0
-                    elif (height - 1) * (1 - alpha / 2) < j <= height - 1:
-                        y = np.pi * (2 * j / (alpha * (height - 1)) - 2 / alpha + 1)
-
-                    wfnx = 0.5 * (1 + np.cos(x))
-                    wfny = 0.5 * (1 + np.cos(y))
-                    wfn[j][i] = wfnx * wfny
+            wy = _tukey_1d(height, alpha)
+            wx = _tukey_1d(width, alpha)
+            wfn = np.outer(wy, wx).astype(np.float32)
         return wfn
