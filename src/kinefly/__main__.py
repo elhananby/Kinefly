@@ -137,6 +137,7 @@ def _default_gui_state(width: int, height: int) -> dict:
                 "radius_inner": ri,
                 "track": False,
                 "subtract_bg": False,
+                "stabilize": False,
             },
             "abdomen": {
                 "hinge": {"x": cx, "y": cy + r},
@@ -146,6 +147,7 @@ def _default_gui_state(width: int, height: int) -> dict:
                 "radius_inner": ri,
                 "track": False,
                 "subtract_bg": False,
+                "stabilize": False,
             },
             "left": {
                 "hinge": {"x": cx - r, "y": cy},
@@ -155,6 +157,7 @@ def _default_gui_state(width: int, height: int) -> dict:
                 "radius_inner": ri,
                 "track": False,
                 "subtract_bg": False,
+                "stabilize": False,
             },
             "right": {
                 "hinge": {"x": cx + r, "y": cy},
@@ -164,6 +167,7 @@ def _default_gui_state(width: int, height: int) -> dict:
                 "radius_inner": ri,
                 "track": False,
                 "subtract_bg": False,
+                "stabilize": False,
             },
             "aux": {
                 "center": {"x": cx, "y": cy},
@@ -216,6 +220,8 @@ def _build_fly_params(config, gui_state: dict, img_size: tuple[int, int] = (640,
         params[name]["threshold"] = bp_config.threshold
         params[name]["tracker"] = bp_config.tracker
         params[name]["autozero"] = bp_config.autozero
+        params[name]["feathering"] = bp_config.feathering
+        params[name]["saturation_correction"] = bp_config.saturation_correction
 
     params.setdefault("gui", {})
     params["gui"]["windows"] = False  # no popup windows in headless mode
