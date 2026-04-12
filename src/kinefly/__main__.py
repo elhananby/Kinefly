@@ -202,6 +202,14 @@ def _build_fly_params(config, gui_state: dict, img_size: tuple[int, int] = (640,
             "(%dx%d). Drag handles to the correct positions.",
             *img_size,
         )
+    else:
+        # Merge defaults for any section missing from the saved state so that a
+        # partial ~/kinefly.yaml (e.g. written by an older version) never crashes.
+        defaults = _default_gui_state(*img_size)
+        for part, default_entry in defaults["gui"].items():
+            saved = gui_state.setdefault("gui", {}).setdefault(part, {})
+            for key, val in default_entry.items():
+                saved.setdefault(key, val)
 
     params = gui_state.copy()
 

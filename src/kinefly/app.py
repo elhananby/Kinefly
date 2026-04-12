@@ -266,16 +266,36 @@ class KineflyApp:
         """Persist handle positions and track flags to ``~/kinefly.yaml``."""
         state: dict = {"gui": {}}
         gui = self._fly.params.get("gui", {})
-        for part in ("head", "abdomen", "left", "right", "aux", "axis"):
+
+        # Motion-tracked parts: hinge + wedge geometry
+        for part in ("head", "abdomen", "left", "right"):
             part_gui = gui.get(part, {})
             entry: dict = {}
-            if "hinge" in part_gui:
-                entry["hinge"] = part_gui["hinge"]
-            for key in ("angle_hi", "angle_lo", "radius_inner", "radius_outer"):
+            for key in ("hinge", "angle_hi", "angle_lo", "radius_inner", "radius_outer",
+                        "track", "subtract_bg", "stabilize"):
                 if key in part_gui:
                     entry[key] = part_gui[key]
-            entry["track"] = part_gui.get("track", False)
+            entry.setdefault("track", False)
             state["gui"][part] = entry
+
+        # Intensity-tracked aux: ellipse geometry
+        aux_gui = gui.get("aux", {})
+        state["gui"]["aux"] = {
+            key: aux_gui[key]
+            for key in ("center", "radius1", "radius2", "angle", "track", "subtract_bg")
+            if key in aux_gui
+        }
+        state["gui"]["aux"].setdefault("track", False)
+
+        # Axis tracker: two points
+        axis_gui = gui.get("axis", {})
+        state["gui"]["axis"] = {
+            key: axis_gui[key]
+            for key in ("pt1", "pt2", "track")
+            if key in axis_gui
+        }
+        state["gui"]["axis"].setdefault("track", False)
+
         try:
             with open(self._state_file, "w") as f:
                 yaml.safe_dump(state, f)
