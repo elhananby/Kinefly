@@ -1,0 +1,275 @@
+"""Main application class for Kinefly GUI mode.
+
+Wires camera, Fly, EventBus, plugins, recorder, and the PySide6 MainWindow
+together via a QTimer-driven frame loop.
+"""
+
+from __future__ import annotations
+
+import logging
+import time
+from pathlib import Path
+from typing import Any
+
+import cv2
+import numpy as np
+import yaml
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
+
+from kinefly.gui.window import MainWindow
+
+logger = logging.getLogger(__name__)
+
+# Timer fires every 16 ms ≈ 60 fps; the actual rate is limited by camera fps.
+_TIMER_INTERVAL_MS = 16
+
+
+def _set_nested(d: dict, keys: list[str], value: Any) -> None:
+    """Set ``d[keys[0]][keys[1]]…[keys[-1]] = value``, creating intermediate dicts."""
+    for key in keys[:-1]:
+        d = d.setdefault(key, {})
+    d[keys[-1]] = value
+
+
+class KineflyApp:
+    """PySide6 application that drives the fly-kinematics pipeline.
+
+    Create one instance and call :meth:`run` to start the event loop.
+
+    Parameters
+    ----------
+    config:
+        Loaded :class:`~kinefly.config.models.RigConfig`.
+    camera:
+        An open :class:`~kinefly.camera.base.CameraSource`.
+    fly:
+        A :class:`~kinefly.fly.Fly` instance.
+    bus:
+        An :class:`~kinefly.core.events.EventBus`.
+    plugins:
+        List of active :class:`~kinefly.plugins.base.OutputPlugin` instances.
+    recorder:
+        Optional :class:`~kinefly.recording.recorder.VideoRecorder` (already started).
+    state_file:
+        Path to the YAML file where GUI state (handle positions, checkboxes) is
+        persisted.  Typically ``~/kinefly.yaml``.
+    """
+
+    def __init__(
+        self,
+        config,
+        camera,
+        fly,
+        bus,
+        plugins: list,
+        recorder=None,
+        state_file: str = "~/kinefly.yaml",
+    ) -> None:
+        self._config = config
+        self._camera = camera
+        self._fly = fly
+        self._bus = bus
+        self._plugins = plugins
+        self._recorder = recorder
+        self._state_file = Path(state_file).expanduser()
+        self._last_frame: np.ndarray | None = None
+
+        self._qapp = QApplication.instance() or QApplication([])
+        self._window = MainWindow()
+
+        # Handle drag state: (tracker, handle_name) or None
+        self._dragging: tuple[Any, str] | None = None
+
+        # Rolling window for FPS computation (monotonic times of recent frames)
+        self._frame_times: list[float] = []
+
+        # Connect window signals
+        self._window.mouse_pressed.connect(self._on_mouse_pressed)
+        self._window.mouse_moved.connect(self._on_mouse_moved)
+        self._window.mouse_released.connect(self._on_mouse_released)
+        self._window.track_toggled.connect(self._on_track_toggled)
+        self._window.record_toggled.connect(self._on_record_toggled)
+        self._window.save_background_clicked.connect(self._on_save_background)
+        self._window.exit_clicked.connect(self._on_exit)
+
+        # Sync checkboxes to current fly params
+        gui = fly.params.get("gui", {})
+        for part in ("head", "abdomen", "left", "right", "aux"):
+            enabled = gui.get(part, {}).get("track", False)
+            self._window.set_track_state(part, enabled)
+
+        # Frame timer
+        self._timer = QTimer()
+        self._timer.setInterval(_TIMER_INTERVAL_MS)
+        self._timer.timeout.connect(self._process_frame)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def run(self) -> int:
+        """Show the window, start the frame timer, enter the Qt event loop.
+
+        Returns the exit code from ``QApplication.exec()``.
+        """
+        self._window.show()
+        self._timer.start()
+        exit_code = self._qapp.exec()
+        self._shutdown()
+        return exit_code
+
+    # ------------------------------------------------------------------
+    # Frame loop
+    # ------------------------------------------------------------------
+
+    def _process_frame(self) -> None:
+        """Read one frame, update the fly, draw overlays, refresh the window."""
+        try:
+            frame, timestamp = self._camera.read()
+        except StopIteration:
+            logger.info("End of video source.")
+            self._timer.stop()
+            self._qapp.quit()
+            return
+        except Exception:
+            logger.exception("Camera read error")
+            self._timer.stop()
+            self._qapp.quit()
+            return
+
+        self._last_frame = frame
+        self._fly.update(frame, timestamp)
+
+        if self._recorder is not None:
+            self._recorder.write_frame(frame)
+
+        # Build display image: BGR → draw overlays → RGB → Qt
+        display = frame.copy()
+        if display.ndim == 2:
+            display = cv2.cvtColor(display, cv2.COLOR_GRAY2BGR)
+        self._fly.draw(display)
+        rgb = cv2.cvtColor(display, cv2.COLOR_BGR2RGB)
+        self._window.update_image(rgb)
+
+        # Update FPS counter
+        now = time.monotonic()
+        self._frame_times.append(now)
+        self._frame_times = [t for t in self._frame_times if now - t <= 1.0]
+        self._window.set_fps(float(len(self._frame_times)))
+
+    # ------------------------------------------------------------------
+    # Mouse / handle interaction
+    # ------------------------------------------------------------------
+
+    def _all_handles(self):
+        """Yield ``(tracker, handle_name, Handle)`` for every tracker handle."""
+        for tracker in (
+            self._fly.head,
+            self._fly.abdomen,
+            self._fly.left,
+            self._fly.right,
+            self._fly.aux,
+            self._fly.axis,
+        ):
+            for name, handle in getattr(tracker, "handles", {}).items():
+                yield tracker, name, handle
+
+    def _on_mouse_pressed(self, x: float, y: float) -> None:
+        pt = np.array([x, y])
+        for tracker, name, handle in self._all_handles():
+            if handle.hit_test(pt):
+                self._dragging = (tracker, name)
+                handle.pt = pt.astype(int)
+                break
+
+    def _on_mouse_moved(self, x: float, y: float) -> None:
+        if self._dragging is None:
+            return
+        tracker, name = self._dragging
+        handle = tracker.handles[name]
+        ipt = np.array([x, y], dtype=int)
+        handle.pt = ipt
+        # Propagate to params so set_params() can re-derive mask geometry
+        _set_nested(
+            self._fly.params,
+            ["gui", tracker.name, name, "x"],
+            int(x),
+        )
+        _set_nested(
+            self._fly.params,
+            ["gui", tracker.name, name, "y"],
+            int(y),
+        )
+        try:
+            tracker.set_params(self._fly.params)
+        except Exception:
+            pass  # params may be incomplete until all handles are placed
+        tracker.bValidMask = False
+
+    def _on_mouse_released(self, x: float, y: float) -> None:
+        if self._dragging is not None:
+            self._save_gui_state()
+        self._dragging = None
+
+    # ------------------------------------------------------------------
+    # Toolbar signal handlers
+    # ------------------------------------------------------------------
+
+    def _on_track_toggled(self, part: str, enabled: bool) -> None:
+        _set_nested(self._fly.params, ["gui", part, "track"], enabled)
+        self._save_gui_state()
+
+    def _on_record_toggled(self, recording: bool) -> None:
+        if self._recorder is None:
+            return
+        if not recording:
+            self._recorder.stop()
+
+    def _on_save_background(self) -> None:
+        if self._last_frame is not None:
+            self._fly.set_background(self._last_frame)
+            logger.info("Background saved.")
+
+    def _on_exit(self) -> None:
+        self._save_gui_state()
+        self._timer.stop()
+        self._qapp.quit()
+
+    # ------------------------------------------------------------------
+    # State persistence
+    # ------------------------------------------------------------------
+
+    def _save_gui_state(self) -> None:
+        """Persist handle positions and track flags to ``~/kinefly.yaml``."""
+        state: dict = {"gui": {}}
+        gui = self._fly.params.get("gui", {})
+        for part in ("head", "abdomen", "left", "right", "aux", "axis"):
+            part_gui = gui.get(part, {})
+            entry: dict = {}
+            if "hinge" in part_gui:
+                entry["hinge"] = part_gui["hinge"]
+            for key in ("angle_hi", "angle_lo", "radius_inner", "radius_outer"):
+                if key in part_gui:
+                    entry[key] = part_gui[key]
+            entry["track"] = part_gui.get("track", False)
+            state["gui"][part] = entry
+        try:
+            with open(self._state_file, "w") as f:
+                yaml.safe_dump(state, f)
+            logger.debug("GUI state saved to %s", self._state_file)
+        except Exception:
+            logger.exception("Failed to save GUI state to %s", self._state_file)
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+
+    def _shutdown(self) -> None:
+        self._camera.close()
+        if self._recorder is not None:
+            self._recorder.stop()
+        for plugin in self._plugins:
+            plugin.stop()
+        self._bus.stop_zmq()
+        logger.info("Kinefly stopped.")

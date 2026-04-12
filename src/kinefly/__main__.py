@@ -32,7 +32,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--headless",
         action="store_true",
         default=False,
-        help="Run without GUI (GUI not yet implemented; this flag is currently ignored)",
+        help="Run without GUI (headless frame loop, no window)",
     )
     parser.add_argument(
         "--record",
@@ -168,7 +168,10 @@ def main() -> int:
 
     _DEFAULT_ZMQ_ADDRESS = "tcp://*:5555"
     zmq_enabled = args.zmq or (config.zmq is not None)
-    zmq_address = (config.zmq.address if config.zmq else _DEFAULT_ZMQ_ADDRESS) if zmq_enabled else None
+    if zmq_enabled:
+        zmq_address = config.zmq.address if config.zmq else _DEFAULT_ZMQ_ADDRESS
+    else:
+        zmq_address = None
     bus = EventBus(zmq_address=zmq_address)
 
     # Register plugins
@@ -225,7 +228,22 @@ def main() -> int:
         recorder.start(w, h, camera.fps, str(out_path))
         logger.info("Recording to %s", out_path)
 
-    # Graceful shutdown on Ctrl-C
+    # --- GUI mode ---
+    if not args.headless:
+        from kinefly.app import KineflyApp
+
+        app = KineflyApp(
+            config=config,
+            camera=camera,
+            fly=fly,
+            bus=bus,
+            plugins=plugins,
+            recorder=recorder,
+            state_file=config.gui.state_file,
+        )
+        return app.run()
+
+    # --- Headless mode ---
     running = True
 
     def _sigint_handler(sig, frame):
@@ -234,7 +252,7 @@ def main() -> int:
 
     signal.signal(signal.SIGINT, _sigint_handler)
 
-    logger.info("Kinefly running. Press Ctrl-C to stop.")
+    logger.info("Kinefly running headless. Press Ctrl-C to stop.")
 
     try:
         while running:
