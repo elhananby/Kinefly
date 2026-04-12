@@ -234,7 +234,7 @@ def _build_fly_params(config, gui_state: dict, img_size: tuple[int, int] = (640,
         params[name]["saturation_correction"] = bp_config.saturation_correction
 
     params.setdefault("gui", {})
-    params["gui"]["windows"] = False  # no popup windows in headless mode
+    params["gui"].setdefault("windows", False)
     aux = getattr(tracking, "aux", None)
     if aux is not None:
         params["wingbeat_min"] = aux.wingbeat_min
@@ -333,6 +333,12 @@ def main() -> int:
     if not args.headless:
         from kinefly.app import KineflyApp
 
+        # Restore invert_color preference from saved GUI state.
+        saved_invert = gui_state.get("gui", {}).get("invert_color", False)
+        if saved_invert:
+            fly.bInvertColor = True
+            fly.bInvertColorAuto = False
+
         app = KineflyApp(
             config=config,
             camera=camera,
@@ -345,6 +351,7 @@ def main() -> int:
         return app.run()
 
     # --- Headless mode ---
+    fly_params["gui"]["windows"] = False  # no popup windows in headless mode
     running = True
 
     def _sigint_handler(sig, frame):

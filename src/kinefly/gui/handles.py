@@ -23,12 +23,18 @@ class Handle:
         self.scale = 1.0
         self.color = color
         self.radiusDraw = 3
-        self.radiusHit = 6
+        # Base hit radius at 480p reference; scales with image resolution.
+        # Kept deliberately larger than radiusDraw so handles are easy to grab.
+        self.radiusHit = 15
+        # Cached pixel hit radius updated each draw() call.
+        self._hit_radius_px: float = 15.0
 
     def hit_test(self, ptMouse: np.ndarray) -> bool:
         d = np.linalg.norm(self.pt - ptMouse)
-        return bool(d < self.radiusHit)
+        return bool(d < self._hit_radius_px)
 
     def draw(self, image: np.ndarray) -> None:
-        radius = max(2, round(self.radiusDraw * draw_scale(image)))
+        scale = draw_scale(image)
+        radius = max(2, round(self.radiusDraw * scale))
+        self._hit_radius_px = max(10.0, self.radiusHit * scale)
         cv2.circle(image, tuple(self.pt.astype(int)), radius, self.color, -1)

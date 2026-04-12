@@ -89,6 +89,9 @@ class KineflyApp:
         self._window.mouse_moved.connect(self._on_mouse_moved)
         self._window.mouse_released.connect(self._on_mouse_released)
         self._window.track_toggled.connect(self._on_track_toggled)
+        self._window.subtract_bg_toggled.connect(self._on_subtract_bg_toggled)
+        self._window.invert_color_toggled.connect(self._on_invert_color_toggled)
+        self._window.windows_toggled.connect(self._on_windows_toggled)
         self._window.record_toggled.connect(self._on_record_toggled)
         self._window.save_background_clicked.connect(self._on_save_background)
         self._window.exit_clicked.connect(self._on_exit)
@@ -96,8 +99,12 @@ class KineflyApp:
         # Sync checkboxes to current fly params
         gui = fly.params.get("gui", {})
         for part in ("head", "abdomen", "left", "right", "aux"):
-            enabled = gui.get(part, {}).get("track", False)
-            self._window.set_track_state(part, enabled)
+            self._window.set_track_state(part, gui.get(part, {}).get("track", False))
+            self._window.set_subtract_bg_state(
+                part, gui.get(part, {}).get("subtract_bg", False)
+            )
+        self._window.set_invert_color_state(bool(getattr(fly, "bInvertColor", False)))
+        self._window.set_windows_state(bool(gui.get("windows", False)))
 
         # Frame timer
         self._timer = QTimer()
@@ -249,6 +256,36 @@ class KineflyApp:
         _set_nested(self._fly.params, ["gui", part, "track"], enabled)
         self._save_gui_state()
 
+    def _on_subtract_bg_toggled(self, part: str, enabled: bool) -> None:
+        if not self._fly.params:
+            return
+        _set_nested(self._fly.params, ["gui", part, "subtract_bg"], enabled)
+        # Invalidate the tracker mask so it rebuilds with/without BG subtraction.
+        for tracker in (
+            self._fly.head,
+            self._fly.abdomen,
+            self._fly.left,
+            self._fly.right,
+            self._fly.aux,
+        ):
+            if getattr(tracker, "name", None) == part:
+                tracker.bValidMask = False
+                break
+        self._save_gui_state()
+
+    def _on_invert_color_toggled(self, enabled: bool) -> None:
+        self._fly.bInvertColor = enabled
+        # Disable auto-detect when the user sets it manually.
+        if hasattr(self._fly, "bInvertColorAuto"):
+            self._fly.bInvertColorAuto = False
+        self._save_gui_state()
+
+    def _on_windows_toggled(self, enabled: bool) -> None:
+        if not self._fly.params:
+            return
+        _set_nested(self._fly.params, ["gui", "windows"], enabled)
+        self._save_gui_state()
+
     def _on_record_toggled(self, recording: bool) -> None:
         if recording:
             import datetime
@@ -320,6 +357,10 @@ class KineflyApp:
             if key in axis_gui
         }
         state["gui"]["axis"].setdefault("track", False)
+
+        # Global display flags
+        state["gui"]["windows"] = bool(gui.get("windows", False))
+        state["gui"]["invert_color"] = bool(getattr(self._fly, "bInvertColor", False))
 
         try:
             with open(self._state_file, "w") as f:

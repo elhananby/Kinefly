@@ -130,3 +130,39 @@ class TestMainWindow:
         rgb = np.zeros((240, 320, 3), dtype=np.uint8)
         win.update_image(rgb)  # Should not raise
         win.close()
+
+    def test_set_subtract_bg_no_signal(self, qapp):
+        """set_subtract_bg_state must not emit subtract_bg_toggled."""
+        from kinefly.gui.window import MainWindow
+
+        win = MainWindow()
+        received = []
+        win.subtract_bg_toggled.connect(lambda p, e: received.append((p, e)))
+        win.set_subtract_bg_state("left", True)
+        assert received == [], "set_subtract_bg_state must not emit subtract_bg_toggled"
+        assert win._subtract_bg_checks["left"].isChecked()
+        win.close()
+
+    def test_set_invert_color_no_signal(self, qapp):
+        """set_invert_color_state must not emit invert_color_toggled."""
+        from kinefly.gui.window import MainWindow
+
+        win = MainWindow()
+        received = []
+        win.invert_color_toggled.connect(lambda e: received.append(e))
+        win.set_invert_color_state(True)
+        assert received == [], "set_invert_color_state must not emit invert_color_toggled"
+        assert win._cb_invert_color.isChecked()
+        win.close()
+
+    def test_set_windows_no_signal(self, qapp):
+        """set_windows_state must not emit windows_toggled."""
+        from kinefly.gui.window import MainWindow
+
+        win = MainWindow()
+        received = []
+        win.windows_toggled.connect(lambda e: received.append(e))
+        win.set_windows_state(True)
+        assert received == [], "set_windows_state must not emit windows_toggled"
+        assert win._cb_windows.isChecked()
+        win.close()
