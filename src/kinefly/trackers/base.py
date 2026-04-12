@@ -66,6 +66,7 @@ class MotionTrackedBodypart:
             "angle_hi": ui_handles.Handle(np.array([0, 0]), self.bgra, name="angle_hi"),
             "angle_lo": ui_handles.Handle(np.array([0, 0]), self.bgra, name="angle_lo"),
             "radius_inner": ui_handles.Handle(np.array([0, 0]), self.bgra, name="radius_inner"),
+            "radius_outer": ui_handles.Handle(np.array([0, 0]), self.bgra, name="radius_outer"),
         }
 
         self.lockBackground = threading.Lock()
@@ -353,6 +354,9 @@ class MotionTrackedBodypart:
         self.handles["hinge"].pt = np.array([x, y])
         self.handles["radius_inner"].pt = np.array([x, y]) + (
             radius_inner * np.array([np.cos(angle), np.sin(angle)])
+        )
+        self.handles["radius_outer"].pt = np.array([x, y]) + (
+            radius_outer * np.array([np.cos(angle), np.sin(angle)])
         )
         self.handles["angle_hi"].pt = np.array([x, y]) + np.array(
             [radius_outer * np.cos(self.angle_hi_i), radius_outer * np.sin(self.angle_hi_i)]

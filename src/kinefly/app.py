@@ -223,10 +223,10 @@ class KineflyApp:
             params["gui"][part][handle_name] = float(angle_b)
             return
 
-        # radius_inner — stored as pixel distance from hinge (float)
-        if handle_name == "radius_inner":
+        # radius_inner / radius_outer — stored as pixel distance from hinge (float)
+        if handle_name in ("radius_inner", "radius_outer"):
             hinge = gui.get(part, {}).get("hinge", {"x": 0, "y": 0})
-            params["gui"][part]["radius_inner"] = float(
+            params["gui"][part][handle_name] = float(
                 np.linalg.norm([x - hinge["x"], y - hinge["y"]])
             )
             return
