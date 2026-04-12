@@ -225,10 +225,28 @@ class KineflyApp:
         self._save_gui_state()
 
     def _on_record_toggled(self, recording: bool) -> None:
-        if self._recorder is None:
-            return
-        if not recording:
-            self._recorder.stop()
+        if recording:
+            import datetime
+
+            from kinefly.recording.recorder import VideoRecorder
+
+            out_dir = Path(self._config.recording.output_dir).expanduser()
+            out_dir.mkdir(parents=True, exist_ok=True)
+            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            out_path = str(out_dir / f"kinefly_{ts}.mp4")
+            w, h = self._camera.resolution
+            self._recorder = VideoRecorder()
+            try:
+                self._recorder.start(w, h, self._camera.fps, out_path)
+                logger.info("Recording to %s", out_path)
+            except Exception:
+                logger.exception("Failed to start recording")
+                self._recorder = None
+        else:
+            if self._recorder is not None:
+                self._recorder.stop()
+                logger.info("Recording stopped.")
+                self._recorder = None
 
     def _on_save_background(self) -> None:
         if self._last_frame is not None:
