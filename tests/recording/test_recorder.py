@@ -10,7 +10,7 @@ from kinefly.recording.recorder import VideoRecorder, detect_encoder
 def test_detect_encoder_returns_string_or_none():
     """detect_encoder() should return a valid encoder string or None."""
     result = detect_encoder()
-    assert result is None or result in ("h264_nvenc", "h264_qsv", "libx264")
+    assert result is None or result in ("h264_videotoolbox", "h264_nvenc", "h264_qsv", "libx264")
 
 
 def test_recorder_write_and_stop(tmp_path):

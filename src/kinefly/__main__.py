@@ -114,25 +114,97 @@ def _load_gui_state(state_file: str) -> dict:
         return yaml.safe_load(f) or {}
 
 
-def _build_fly_params(config, gui_state: dict) -> dict:
+def _default_gui_state(width: int, height: int) -> dict:
+    """Return a complete gui_state with sensible default handle positions.
+
+    Positions are centred on the image with body parts arranged in a cross:
+    head above centre, abdomen below, left/right wings to the sides.
+    All tracking is disabled by default — the user enables it after placing
+    the handles.
+    """
+    cx, cy = width // 2, height // 2
+    r = min(width, height) // 6  # rough spacing from centre
+    ro = min(width, height) // 8  # outer radius of tracking wedge
+    ri = ro // 4  # inner radius
+
+    return {
+        "gui": {
+            "head": {
+                "hinge": {"x": cx, "y": cy - r},
+                "angle_hi": 1.0,
+                "angle_lo": -1.0,
+                "radius_outer": ro,
+                "radius_inner": ri,
+                "track": False,
+                "subtract_bg": False,
+            },
+            "abdomen": {
+                "hinge": {"x": cx, "y": cy + r},
+                "angle_hi": 1.0,
+                "angle_lo": -1.0,
+                "radius_outer": ro,
+                "radius_inner": ri,
+                "track": False,
+                "subtract_bg": False,
+            },
+            "left": {
+                "hinge": {"x": cx - r, "y": cy},
+                "angle_hi": 1.5,
+                "angle_lo": 0.1,
+                "radius_outer": ro,
+                "radius_inner": ri,
+                "track": False,
+                "subtract_bg": False,
+            },
+            "right": {
+                "hinge": {"x": cx + r, "y": cy},
+                "angle_hi": -0.1,
+                "angle_lo": -1.5,
+                "radius_outer": ro,
+                "radius_inner": ri,
+                "track": False,
+                "subtract_bg": False,
+            },
+            "aux": {
+                "center": {"x": cx, "y": cy},
+                "radius1": ro // 2,
+                "radius2": ri,
+                "angle": 0.0,
+                "track": False,
+                "subtract_bg": False,
+            },
+            "axis": {
+                "pt1": {"x": cx, "y": cy - r},
+                "pt2": {"x": cx, "y": cy + r},
+                "track": False,
+            },
+            "windows": False,
+        }
+    }
+
+
+def _build_fly_params(config, gui_state: dict, img_size: tuple[int, int] = (640, 480)) -> dict:
     """Merge rig config + GUI state into the params dict expected by Fly.
 
-    Trackers require hinge positions from ``gui_state`` (loaded from
-    ``~/kinefly.yaml``).  If the state file is absent or incomplete, return
-    an empty dict so that ``Fly`` falls back to null (stub) trackers — the
-    user can then set hinge positions interactively via the GUI.
+    If ``gui_state`` has no hinge positions (e.g. first launch with no
+    ``~/kinefly.yaml``), default positions centred on the image are used so
+    that handles are immediately visible and draggable.
     """
-    # Without at least one hinge position the trackers cannot initialise.
     has_hinges = bool(gui_state.get("gui", {}).get("head", {}).get("hinge"))
     if not has_hinges:
-        return {}
+        gui_state = _default_gui_state(*img_size)
+        logger.info(
+            "No saved GUI state found — using default handle positions "
+            "(%dx%d). Drag handles to the correct positions.",
+            *img_size,
+        )
 
     params = gui_state.copy()
 
     # rc_background is required by every tracker's set_params().
     params["rc_background"] = config.tracking.rc_background
 
-    # Overlay tracking thresholds/tracker types from rig config
+    # Overlay tracking thresholds/tracker types from rig config.
     tracking = config.tracking
     for name in ("head", "abdomen", "left", "right"):
         bp_config = getattr(tracking, name, None)
@@ -205,15 +277,7 @@ def main() -> int:
         bus.register(plugin.on_flystate)
         plugins.append(plugin)
 
-    # Load GUI state and create Fly
-    gui_state = _load_gui_state(config.gui.state_file)
-    fly_params = _build_fly_params(config, gui_state)
-
-    from kinefly.fly import Fly
-
-    fly = Fly(params=fly_params, event_bus=bus)
-
-    # Create camera
+    # Open camera first so we know the resolution for default handle positions.
     try:
         camera = _create_camera(config)
         camera.open()
@@ -223,6 +287,14 @@ def main() -> int:
             p.stop()
         bus.stop_zmq()
         return 1
+
+    # Load GUI state and create Fly
+    gui_state = _load_gui_state(config.gui.state_file)
+    fly_params = _build_fly_params(config, gui_state, img_size=camera.resolution)
+
+    from kinefly.fly import Fly
+
+    fly = Fly(params=fly_params, event_bus=bus)
 
     # Optional recorder
     recorder = None

@@ -15,7 +15,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-_ENCODER_PREFERENCE = ["h264_nvenc", "h264_qsv", "libx264"]
+_ENCODER_PREFERENCE = ["h264_videotoolbox", "h264_nvenc", "h264_qsv", "libx264"]
 
 
 def detect_encoder() -> str | None:
