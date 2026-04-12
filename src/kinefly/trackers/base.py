@@ -16,6 +16,7 @@ from kinefly.core import imaging
 from kinefly.gui import handles as ui_handles
 from kinefly.gui import ui_colors
 from kinefly.gui.imagewindow import ImageWindow
+from kinefly.gui.ui_colors import draw_scale
 
 logger = logging.getLogger(__name__)
 
@@ -460,6 +461,7 @@ class MotionTrackedBodypart:
             radius_outer = int(gui_part["radius_outer"])
             radius_inner = int(gui_part["radius_inner"])
             radius_mid = int((gui_part["radius_outer"] + gui_part["radius_inner"]) / 2.0)
+            thickness = max(1, round(draw_scale(image)))
 
             # Draw the mid arc.
             cv2.ellipse(
@@ -470,7 +472,7 @@ class MotionTrackedBodypart:
                 np.rad2deg(self.angle_hi_i),
                 np.rad2deg(self.angle_lo_i),
                 self.bgra_dim,
-                1,
+                thickness,
             )
 
             # Draw the outer arc.
@@ -482,7 +484,7 @@ class MotionTrackedBodypart:
                 np.rad2deg(self.angle_hi_i),
                 np.rad2deg(self.angle_lo_i),
                 self.bgra_dim,
-                1,
+                thickness,
             )
 
             # Draw the inner arc.
@@ -494,12 +496,12 @@ class MotionTrackedBodypart:
                 np.rad2deg(self.angle_hi_i),
                 np.rad2deg(self.angle_lo_i),
                 self.bgra_dim,
-                1,
+                thickness,
             )
 
             # Draw wedge lines.
-            cv2.line(image, self.ptWedgeHi_inner, self.ptWedgeHi_outer, self.bgra_dim, 1)
-            cv2.line(image, self.ptWedgeLo_inner, self.ptWedgeLo_outer, self.bgra_dim, 1)
+            cv2.line(image, self.ptWedgeHi_inner, self.ptWedgeHi_outer, self.bgra_dim, thickness)
+            cv2.line(image, self.ptWedgeLo_inner, self.ptWedgeLo_outer, self.bgra_dim, thickness)
 
             # Show the extra windows.
             self.windowBG.show()
@@ -952,6 +954,7 @@ class IntensityTrackedBodypart:
             y = int(gui_part["center"]["y"])
             radius1 = int(gui_part["radius1"])
             radius2 = int(gui_part["radius2"])
+            thickness = max(1, round(draw_scale(image)))
 
             # Draw the outer arc.
             cv2.ellipse(
@@ -962,7 +965,7 @@ class IntensityTrackedBodypart:
                 0,
                 360,
                 self.bgra,
-                1,
+                thickness,
             )
 
             # Show the extra windows.

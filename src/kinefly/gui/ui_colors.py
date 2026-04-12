@@ -1,9 +1,30 @@
-"""Color constants for the Kinefly GUI.
+"""Color constants and drawing utilities for the Kinefly GUI.
 
 Ported from nodes/ui.py. Colors are BGRA tuples for use with OpenCV.
 """
 
 from __future__ import annotations
+
+import numpy as np
+
+
+def draw_scale(image: np.ndarray, reference: int = 480) -> float:
+    """Return a scale factor relative to a 480-pixel reference dimension.
+
+    Use this to make handle radii and line thicknesses proportional to the
+    camera frame resolution so the overlay looks the same regardless of
+    whether the camera is 480p, 1080p, or higher.
+
+    Parameters
+    ----------
+    image:
+        The frame being drawn on (used for its shape).
+    reference:
+        The resolution at which scale == 1.0 (default: 480 px).
+    """
+    h, w = image.shape[:2]
+    return min(h, w) / reference
+
 
 # Button side constants (kept for layout use)
 SIDE_TOP = 1

@@ -8,7 +8,7 @@ from __future__ import annotations
 import cv2
 import numpy as np
 
-from kinefly.gui.ui_colors import bgra_dict
+from kinefly.gui.ui_colors import bgra_dict, draw_scale
 
 
 class Handle:
@@ -30,4 +30,5 @@ class Handle:
         return bool(d < self.radiusHit)
 
     def draw(self, image: np.ndarray) -> None:
-        cv2.circle(image, tuple(self.pt.astype(int)), self.radiusDraw, self.color, -1)
+        radius = max(2, round(self.radiusDraw * draw_scale(image)))
+        cv2.circle(image, tuple(self.pt.astype(int)), radius, self.color, -1)
