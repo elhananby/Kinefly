@@ -115,10 +115,22 @@ def _load_gui_state(state_file: str) -> dict:
 
 
 def _build_fly_params(config, gui_state: dict) -> dict:
-    """Merge rig config + GUI state into the params dict expected by Fly."""
-    # Fly expects params['gui'] with hinge positions + params['left']['threshold'] etc.
-    # If gui_state has the structure, use it; otherwise return minimal.
+    """Merge rig config + GUI state into the params dict expected by Fly.
+
+    Trackers require hinge positions from ``gui_state`` (loaded from
+    ``~/kinefly.yaml``).  If the state file is absent or incomplete, return
+    an empty dict so that ``Fly`` falls back to null (stub) trackers — the
+    user can then set hinge positions interactively via the GUI.
+    """
+    # Without at least one hinge position the trackers cannot initialise.
+    has_hinges = bool(gui_state.get("gui", {}).get("head", {}).get("hinge"))
+    if not has_hinges:
+        return {}
+
     params = gui_state.copy()
+
+    # rc_background is required by every tracker's set_params().
+    params["rc_background"] = config.tracking.rc_background
 
     # Overlay tracking thresholds/tracker types from rig config
     tracking = config.tracking
