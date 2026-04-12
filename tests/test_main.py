@@ -15,7 +15,7 @@ def test_arg_parser_defaults():
     assert args.rig == Path("rigs/example/config.yaml")
     assert args.headless is False
     assert args.record is False
-    assert args.zmq is None
+    assert args.zmq is False
     assert args.verbose is False
 
 
@@ -33,8 +33,8 @@ def test_arg_parser_config_alias():
 
 def test_arg_parser_zmq():
     parser = build_arg_parser()
-    args = parser.parse_args(["--zmq", "tcp://*:5555"])
-    assert args.zmq == "tcp://*:5555"
+    args = parser.parse_args(["--zmq"])
+    assert args.zmq is True
 
 
 def test_arg_parser_record():

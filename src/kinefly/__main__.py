@@ -41,9 +41,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--zmq",
-        metavar="ADDRESS",
-        default=None,
-        help="ZeroMQ publish address override (e.g. tcp://*:5555)",
+        action="store_true",
+        default=False,
+        help=(
+            "Enable ZeroMQ FlyState publishing. "
+            "Address is taken from the rig config's zmq.address field, "
+            "or defaults to tcp://*:5555 if not set."
+        ),
     )
     parser.add_argument(
         "--version",
@@ -162,7 +166,9 @@ def main() -> int:
     # Create EventBus
     from kinefly.core.events import EventBus
 
-    zmq_address = args.zmq or (config.zmq.address if config.zmq else None)
+    _DEFAULT_ZMQ_ADDRESS = "tcp://*:5555"
+    zmq_enabled = args.zmq or (config.zmq is not None)
+    zmq_address = (config.zmq.address if config.zmq else _DEFAULT_ZMQ_ADDRESS) if zmq_enabled else None
     bus = EventBus(zmq_address=zmq_address)
 
     # Register plugins
