@@ -201,8 +201,9 @@ def _build_fly_params(config, gui_state: dict, img_size: tuple[int, int] = (640,
 
     params = gui_state.copy()
 
-    # rc_background is required by every tracker's set_params().
+    # Top-level tracking params required by tracker set_params().
     params["rc_background"] = config.tracking.rc_background
+    params["n_edges_max"] = config.tracking.n_edges_max
 
     # Overlay tracking thresholds/tracker types from rig config.
     tracking = config.tracking
