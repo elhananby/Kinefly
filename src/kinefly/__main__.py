@@ -207,6 +207,8 @@ def _build_fly_params(config, gui_state: dict, img_size: tuple[int, int] = (640,
         # partial ~/kinefly.yaml (e.g. written by an older version) never crashes.
         defaults = _default_gui_state(*img_size)
         for part, default_entry in defaults["gui"].items():
+            if not isinstance(default_entry, dict):
+                continue
             saved = gui_state.setdefault("gui", {}).setdefault(part, {})
             for key, val in default_entry.items():
                 saved.setdefault(key, val)
