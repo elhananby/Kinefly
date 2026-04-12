@@ -426,9 +426,9 @@ class WindowFunctions:
                     wfn[j][i] = 0.5 * (1 - np.cos(x)) * 0.5 * (1 - np.cos(y))
         return wfn
 
-    def create_tukey(self, shape: tuple[int, int]) -> np.ndarray:
+    def create_tukey(self, shape: tuple[int, int], feathering: float = 0.25) -> np.ndarray:
         (height, width) = shape
-        alpha = 0.25
+        alpha = feathering if feathering > 0 else 0.25
         wfn = np.ones(shape, dtype=np.float32)
         if height > 1 and width > 1:
             for i in range(width):
