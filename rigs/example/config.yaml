@@ -2,10 +2,11 @@ kinefly:
   version: 2
 
 camera:
-  source: opencv
+  source: harvester
   device_index: 0
-  framerate: 60
+  framerate: 30
   scale_image: 1.0
+  cti_file: "/Applications/pylon Viewer.app/Contents/Frameworks/pylon.framework/Versions/A/Libraries/gentlproducer/gtl/ProducerGEV.cti"  # Path to GenTL producer CTI file (required for harvester)
 
 tracking:
   n_edges_max: 1

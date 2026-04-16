@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-harvester = ["harvesters", "genicam; sys_platform == 'linux'"]
+harvester = ["harvesters", "genicam!=1.5.1"]
 phidgets = ["Phidget22"]
 ledpanels = ["pyserial"]
 zmq = ["pyzmq", "msgpack"]

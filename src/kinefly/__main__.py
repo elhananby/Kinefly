@@ -92,6 +92,7 @@ def _create_camera(config):
         from kinefly.camera.harvester import HarvesterCamera
 
         return HarvesterCamera(
+            cti_file=config.camera.cti_file,
             framerate=config.camera.framerate,
         )
     else:
